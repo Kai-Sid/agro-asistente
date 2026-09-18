@@ -3,11 +3,11 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class AuthenticatedIdentity:
-    farmer_id: str
+class IdentidadAutenticada:
+    agricultor_id: str
 
 
-class TokenVerifierPort(ABC):
+class PuertoVerificadorToken(ABC):
     @abstractmethod
-    def verify(self, token: str) -> AuthenticatedIdentity:
+    def verificar(self, token: str) -> IdentidadAutenticada:
         """Valida un token y devuelve la identidad del agricultor."""

@@ -1,74 +1,62 @@
-class DomainError(Exception):
+class ErrorDominio(Exception):
     """Error de regla de negocio."""
 
 
-class InvalidFarmerDataError(DomainError):
+class ErrorDatosAgricultorInvalidos(ErrorDominio):
     """Datos obligatorios del agricultor inválidos o ausentes."""
 
 
-class InvalidEmailError(DomainError):
+class ErrorCorreoInvalido(ErrorDominio):
     """El correo electrónico no cumple el formato del dominio."""
 
 
-class InvalidPasswordError(DomainError):
+class ErrorContrasenaInvalida(ErrorDominio):
     """La contraseña no cumple las reglas del dominio."""
 
 
-class DuplicateEmailError(DomainError):
+class ErrorCorreoDuplicado(ErrorDominio):
     """Ya existe un agricultor con el mismo correo."""
 
 
-class InvalidCredentialsError(DomainError):
+class ErrorCredencialesInvalidas(ErrorDominio):
     """Email o contraseña incorrectos. El mensaje debe ser genérico."""
 
 
-class InvalidTokenError(DomainError):
+class ErrorTokenInvalido(ErrorDominio):
     """Token ausente, inválido o expirado."""
 
 
-class InvalidContextDataError(DomainError):
+class ErrorDatosContextoInvalidos(ErrorDominio):
     """Datos del contexto agrícola inválidos."""
 
 
-class ContextNotFoundError(DomainError):
+class ErrorContextoNoEncontrado(ErrorDominio):
     """El contexto no existe o no pertenece al agricultor autenticado."""
 
 
-class InvalidQueryTextError(DomainError):
+class ErrorTextoConsultaInvalido(ErrorDominio):
     """El texto de la consulta agrícola es inválido."""
 
 
-class InvalidQueryDataError(DomainError):
+class ErrorDatosConsultaInvalidos(ErrorDominio):
     """Datos de la consulta agrícola inválidos o ausentes."""
 
 
-class SelectedContextNotFoundError(DomainError):
+class ErrorContextoSeleccionadoNoEncontrado(ErrorDominio):
     """El agricultor no tiene un contexto agrícola seleccionado."""
 
 
-class InvalidQueryTextError(DomainError):
-    """El texto de la consulta agrícola es inválido."""
-
-
-class InvalidQueryDataError(DomainError):
-    """Datos de la consulta agrícola inválidos."""
-
-
-class SelectedContextNotFoundError(DomainError):
-    """El agricultor no tiene un contexto agrícola seleccionado."""
-
-
-class InvalidKnowledgeDocumentError(DomainError):
+class ErrorDocumentoConocimientoInvalido(ErrorDominio):
     """Datos del documento de conocimiento inválidos o ausentes."""
 
 
-class DuplicateKnowledgeDocumentError(DomainError):
+class ErrorDocumentoConocimientoDuplicado(ErrorDominio):
     """Ya existe un documento con el mismo contenido."""
 
 
-class InvalidEvidenceError(DomainError):
+class ErrorEvidenciaInvalida(ErrorDominio):
     """Datos de evidencia recuperada inválidos o ausentes."""
 
 
-class KnowledgeFileNotFoundError(DomainError):
+class ErrorArchivoConocimientoNoEncontrado(ErrorDominio):
     """El archivo Markdown del documento de conocimiento no existe."""

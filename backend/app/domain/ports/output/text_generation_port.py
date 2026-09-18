@@ -3,31 +3,31 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class GeneratedAnswer:
-    answer_text: str
-    generation_method: str
+class RespuestaGenerada:
+    texto_respuesta: str
+    metodo_generacion: str
 
 
 @dataclass(frozen=True)
-class RetrievedPassage:
+class PasajeRecuperado:
     """Pasaje recuperado para construir la respuesta inicial. No es un LLM."""
 
-    title: str
-    excerpt: str
+    titulo: str
+    extracto: str
 
 
-class TextGenerationPort(ABC):
+class PuertoGeneracionTexto(ABC):
     """Puerto de salida para generar el texto de una respuesta agrícola.
 
     PMV1 usa una plantilla. El dominio no conoce el adaptador concreto.
     """
 
     @abstractmethod
-    def generate(
+    def generar(
         self,
-        query_text: str,
-        crop: str,
+        texto_consulta: str,
+        cultivo: str,
         region: str,
-        passages: list[RetrievedPassage] | None = None,
-    ) -> GeneratedAnswer:
+        pasajes: list[PasajeRecuperado] | None = None,
+    ) -> RespuestaGenerada:
         """Genera una respuesta a partir de la consulta, el contexto y pasajes recuperados."""

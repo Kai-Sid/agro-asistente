@@ -1,30 +1,30 @@
-from app.domain.ports.output.agricultural_context_repository_port import (
-    AgriculturalContextRepositoryPort,
-)
 from app.domain.ports.output.embedding_port import EmbeddingPort
-from app.domain.ports.output.evidence_repository_port import EvidenceRepositoryPort
-from app.domain.ports.output.farmer_repository_port import FarmerRepositoryPort
-from app.domain.ports.output.knowledge_document_repository_port import (
-    KnowledgeDocumentRepositoryPort,
+from app.domain.ports.output.hasher_contrasena_port import PuertoHasherContrasena
+from app.domain.ports.output.repositorio_agricultor_port import PuertoRepositorioAgricultor
+from app.domain.ports.output.repositorio_consulta_port import PuertoRepositorioConsulta
+from app.domain.ports.output.repositorio_contexto_agricola_port import (
+    PuertoRepositorioContextoAgricola,
 )
-from app.domain.ports.output.password_hasher_port import PasswordHasherPort
-from app.domain.ports.output.query_repository_port import QueryRepositoryPort
-from app.domain.ports.output.text_generation_port import GeneratedAnswer, TextGenerationPort
-from app.domain.ports.output.token_issuer_port import TokenIssuerPort
-from app.domain.ports.output.token_verifier_port import TokenVerifierPort
+from app.domain.ports.output.repositorio_documento_conocimiento_port import (
+    PuertoRepositorioDocumentoConocimiento,
+)
+from app.domain.ports.output.repositorio_evidencia_port import PuertoRepositorioEvidencia
+from app.domain.ports.output.text_generation_port import PuertoGeneracionTexto, RespuestaGenerada
+from app.domain.ports.output.token_issuer_port import PuertoEmisorToken
+from app.domain.ports.output.token_verifier_port import PuertoVerificadorToken
 from app.domain.ports.output.vector_store_port import VectorStorePort
 
 __all__ = [
-    "AgriculturalContextRepositoryPort",
     "EmbeddingPort",
-    "EvidenceRepositoryPort",
-    "FarmerRepositoryPort",
-    "GeneratedAnswer",
-    "KnowledgeDocumentRepositoryPort",
-    "PasswordHasherPort",
-    "QueryRepositoryPort",
-    "TextGenerationPort",
-    "TokenIssuerPort",
-    "TokenVerifierPort",
+    "PuertoEmisorToken",
+    "PuertoGeneracionTexto",
+    "PuertoHasherContrasena",
+    "PuertoRepositorioAgricultor",
+    "PuertoRepositorioConsulta",
+    "PuertoRepositorioContextoAgricola",
+    "PuertoRepositorioDocumentoConocimiento",
+    "PuertoRepositorioEvidencia",
+    "PuertoVerificadorToken",
+    "RespuestaGenerada",
     "VectorStorePort",
 ]

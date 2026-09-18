@@ -1,6 +1,6 @@
 import re
 
-from app.domain.exceptions import InvalidEmailError
+from app.domain.exceptions import ErrorCorreoInvalido
 
 _EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
 
@@ -8,10 +8,10 @@ _EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$
 class Email:
     def __init__(self, value: str) -> None:
         if value is None or not str(value).strip():
-            raise InvalidEmailError("El correo electrónico es obligatorio")
+            raise ErrorCorreoInvalido("El correo electrónico es obligatorio")
         normalized = str(value).strip().lower()
         if not _EMAIL_PATTERN.match(normalized):
-            raise InvalidEmailError("El correo electrónico no tiene un formato válido")
+            raise ErrorCorreoInvalido("El correo electrónico no tiene un formato válido")
         self._value = normalized
 
     @property
