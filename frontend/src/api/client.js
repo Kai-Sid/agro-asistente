@@ -103,7 +103,7 @@ export function selectContext(contextId) {
 }
 
 export function submitAgriculturalQuery(payload) {
-  return api.post("/api/v1/queries", payload);
+  return api.post("/api/v1/queries", payload, { timeout: 120000 });
 }
 
 export function listKnowledgeDocuments() {

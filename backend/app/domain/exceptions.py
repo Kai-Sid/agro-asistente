@@ -60,3 +60,11 @@ class ErrorEvidenciaInvalida(ErrorDominio):
 
 class ErrorArchivoConocimientoNoEncontrado(ErrorDominio):
     """El archivo Markdown del documento de conocimiento no existe."""
+
+
+class ErrorGeneracionTexto(ErrorDominio):
+    """No se pudo generar la respuesta técnica. El dominio no conoce el proveedor."""
+
+
+class ErrorObservacionesMeteorologicas(ErrorDominio):
+    """No se pudieron obtener observaciones meteorológicas. El dominio no conoce el proveedor."""

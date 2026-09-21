@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from sqlalchemy import DateTime, Integer, String, select
@@ -13,19 +14,20 @@ from app.domain.ports.output.repositorio_documento_conocimiento_port import (
     PuertoRepositorioDocumentoConocimiento,
 )
 from app.domain.valueObjects.hash_contenido import HashContenido
-from app.infrastructure.adapters.output.mysql.connection import Base
+from app.infrastructure.adapters.output.mysql.connection import (
+    Base,
+    id_a_dominio,
+    id_a_entero,
+)
 
 
 class RegistroDocumentoConocimiento(Base):
-    __tablename__ = "knowledge_documents"
+    __tablename__ = "documentos_conocimiento"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    title: Mapped[str] = mapped_column(String(200), nullable=False)
-    source_path: Mapped[str] = mapped_column(String(255), nullable=False)
-    topic: Mapped[str] = mapped_column(String(50), nullable=False)
-    content_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
-    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False)
-    ingested_at: Mapped[object] = mapped_column(DateTime, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ruta_origen: Mapped[str] = mapped_column(String(500), nullable=False)
+    hash_contenido: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    fecha_creacion: Mapped[object] = mapped_column(DateTime, nullable=True)
 
 
 class RepositorioDocumentoConocimientoMysql(PuertoRepositorioDocumentoConocimiento):
@@ -37,32 +39,38 @@ class RepositorioDocumentoConocimientoMysql(PuertoRepositorioDocumentoConocimien
         with self._session_factory() as session:
             documento_id = session.scalar(
                 select(RegistroDocumentoConocimiento.id).where(
-                    RegistroDocumentoConocimiento.content_hash == hash_contenido.value
+                    RegistroDocumentoConocimiento.hash_contenido == hash_contenido.value
                 )
             )
             return documento_id is not None
 
     def guardar(self, documento: DocumentoConocimiento, contenido: str) -> None:
         ruta_archivo = self._ruta_archivo(documento.ruta_origen)
+        ruta_meta = self._ruta_meta(documento.ruta_origen)
         ruta_archivo.parent.mkdir(parents=True, exist_ok=True)
         ruta_archivo.write_text(contenido, encoding="utf-8")
+        _escribir_meta(
+            ruta_meta,
+            titulo=documento.titulo,
+            tema=documento.tema,
+            cantidad_fragmentos=documento.cantidad_fragmentos,
+        )
 
         registro = RegistroDocumentoConocimiento(
-            id=documento.id,
-            title=documento.titulo,
-            source_path=documento.ruta_origen,
-            topic=documento.tema,
-            content_hash=documento.hash_contenido.value,
-            chunk_count=documento.cantidad_fragmentos,
-            ingested_at=documento.incorporado_en,
+            ruta_origen=documento.ruta_origen[:500],
+            hash_contenido=documento.hash_contenido.value,
+            fecha_creacion=documento.incorporado_en,
         )
         with self._session_factory() as session:
             session.add(registro)
             try:
+                session.flush()
+                documento.id = id_a_dominio(registro.id)
                 session.commit()
             except IntegrityError as error:
                 session.rollback()
                 ruta_archivo.unlink(missing_ok=True)
+                ruta_meta.unlink(missing_ok=True)
                 raise ErrorDocumentoConocimientoDuplicado(
                     "El documento de conocimiento ya está registrado"
                 ) from error
@@ -71,7 +79,7 @@ class RepositorioDocumentoConocimientoMysql(PuertoRepositorioDocumentoConocimien
         with self._session_factory() as session:
             registros = session.scalars(
                 select(RegistroDocumentoConocimiento).order_by(
-                    RegistroDocumentoConocimiento.ingested_at.desc()
+                    RegistroDocumentoConocimiento.fecha_creacion.desc()
                 )
             ).all()
             return [self._a_entidad(registro) for registro in registros]
@@ -80,7 +88,7 @@ class RepositorioDocumentoConocimientoMysql(PuertoRepositorioDocumentoConocimien
         with self._session_factory() as session:
             registro = session.scalar(
                 select(RegistroDocumentoConocimiento).where(
-                    RegistroDocumentoConocimiento.id == documento_id
+                    RegistroDocumentoConocimiento.id == id_a_entero(documento_id)
                 )
             )
             if registro is None:
@@ -99,25 +107,54 @@ class RepositorioDocumentoConocimientoMysql(PuertoRepositorioDocumentoConocimien
         with self._session_factory() as session:
             registro = session.scalar(
                 select(RegistroDocumentoConocimiento).where(
-                    RegistroDocumentoConocimiento.id == documento_id
+                    RegistroDocumentoConocimiento.id == id_a_entero(documento_id)
                 )
             )
             if registro is None:
                 return
-            registro.chunk_count = cantidad_fragmentos
-            session.commit()
+            meta = _leer_meta(self._ruta_meta(registro.ruta_origen))
+            _escribir_meta(
+                self._ruta_meta(registro.ruta_origen),
+                titulo=str(meta.get("title") or ""),
+                tema=str(meta.get("topic") or ""),
+                cantidad_fragmentos=cantidad_fragmentos,
+            )
 
     def _ruta_archivo(self, ruta_origen: str) -> Path:
         nombre_archivo = Path(ruta_origen).name
         return self._directorio_conocimiento / nombre_archivo
 
+    def _ruta_meta(self, ruta_origen: str) -> Path:
+        return self._ruta_archivo(ruta_origen).with_suffix(".meta.json")
+
     def _a_entidad(self, registro: RegistroDocumentoConocimiento) -> DocumentoConocimiento:
+        meta = _leer_meta(self._ruta_meta(registro.ruta_origen))
         return DocumentoConocimiento(
-            documento_id=registro.id,
-            titulo=registro.title,
-            ruta_origen=registro.source_path,
-            tema=registro.topic,
-            hash_contenido=HashContenido(registro.content_hash),
-            cantidad_fragmentos=int(registro.chunk_count),
-            incorporado_en=registro.ingested_at,
+            documento_id=id_a_dominio(registro.id),
+            titulo=str(meta.get("title") or ""),
+            ruta_origen=registro.ruta_origen,
+            tema=str(meta.get("topic") or ""),
+            hash_contenido=HashContenido(registro.hash_contenido),
+            cantidad_fragmentos=int(meta.get("chunk_count") or 0),
+            incorporado_en=registro.fecha_creacion,
         )
+
+
+def _escribir_meta(ruta: Path, titulo: str, tema: str, cantidad_fragmentos: int) -> None:
+    ruta.write_text(
+        json.dumps(
+            {"title": titulo, "topic": tema, "chunk_count": cantidad_fragmentos},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+
+def _leer_meta(ruta: Path) -> dict[str, object]:
+    if not ruta.exists():
+        return {}
+    try:
+        loaded = json.loads(ruta.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}

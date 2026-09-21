@@ -1,5 +1,8 @@
-from app.infrastructure.adapters.output.generation.template_generation_adapter import (
-    TemplateGenerationAdapter,
+from app.infrastructure.adapters.output.generation.adaptador_generacion_ollama import (
+    AdaptadorGeneracionOllama,
+)
+from app.infrastructure.adapters.output.generation.adaptador_generacion_plantilla import (
+    AdaptadorGeneracionPlantilla,
 )
 
-__all__ = ["TemplateGenerationAdapter"]
+__all__ = ["AdaptadorGeneracionOllama", "AdaptadorGeneracionPlantilla"]

@@ -45,8 +45,6 @@ class RegistrarConsulta(PuertoRegistrarConsulta):
             contexto_id=contexto.id,
             texto=texto_consulta,
         )
-        self._repositorio_consulta.guardar_consulta(consulta)
-
         fragmentos = self._recuperacion_rag.recuperar(consulta.texto.value)
         generada = self._generacion_texto.generar(
             texto_consulta=consulta.texto.value,
@@ -54,6 +52,7 @@ class RegistrarConsulta(PuertoRegistrarConsulta):
             region=contexto.region.value,
             pasajes=_pasajes_desde_fragmentos(fragmentos),
         )
+        self._repositorio_consulta.guardar_consulta(consulta)
         respuesta = Respuesta.crear(
             consulta_id=consulta.id,
             texto_respuesta=generada.texto_respuesta,

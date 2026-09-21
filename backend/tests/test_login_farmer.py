@@ -2,95 +2,95 @@ from pathlib import Path
 
 import pytest
 
-from app.application.useCases.login_farmer import LoginFarmer
-from app.domain.entities.farmer import Farmer
-from app.domain.exceptions import InvalidCredentialsError, InvalidEmailError
-from app.domain.ports.input.login_farmer_port import LoginFarmerCommand
-from app.domain.ports.output.farmer_repository_port import FarmerRepositoryPort
-from app.domain.ports.output.password_hasher_port import PasswordHasherPort
-from app.domain.ports.output.token_issuer_port import TokenIssuerPort
+from app.application.useCases.iniciar_sesion_agricultor import IniciarSesionAgricultor
+from app.domain.entities.agricultor import Agricultor
+from app.domain.exceptions import ErrorCorreoInvalido, ErrorCredencialesInvalidas
+from app.domain.ports.input.iniciar_sesion_agricultor_port import ComandoIniciarSesionAgricultor
+from app.domain.ports.output.hasher_contrasena_port import PuertoHasherContrasena
+from app.domain.ports.output.repositorio_agricultor_port import PuertoRepositorioAgricultor
+from app.domain.ports.output.token_issuer_port import PuertoEmisorToken
 from app.domain.valueObjects.email import Email
-from app.domain.valueObjects.password_hash import PasswordHash
+from app.domain.valueObjects.hash_contrasena import HashContrasena
 
 
-class InMemoryFarmerRepository(FarmerRepositoryPort):
+class RepositorioAgricultorEnMemoria(PuertoRepositorioAgricultor):
     def __init__(self) -> None:
-        self.farmers: list[Farmer] = []
+        self.agricultores: list[Agricultor] = []
 
-    def exists_by_email(self, email: Email) -> bool:
-        return any(farmer.email == email for farmer in self.farmers)
+    def existe_por_correo(self, email: Email) -> bool:
+        return any(agricultor.email == email for agricultor in self.agricultores)
 
-    def find_by_email(self, email: Email) -> Farmer | None:
-        for farmer in self.farmers:
-            if farmer.email == email:
-                return farmer
+    def buscar_por_correo(self, email: Email) -> Agricultor | None:
+        for agricultor in self.agricultores:
+            if agricultor.email == email:
+                return agricultor
         return None
 
-    def save(self, farmer: Farmer) -> None:
-        self.farmers.append(farmer)
+    def guardar(self, agricultor: Agricultor) -> None:
+        self.agricultores.append(agricultor)
 
 
-class FakePasswordHasher(PasswordHasherPort):
+class HasherContrasenaFalso(PuertoHasherContrasena):
     def __init__(self) -> None:
         self.verify_calls: list[tuple[str, str]] = []
 
-    def hash_password(self, password: str) -> str:
-        return f"$fake${password}"
+    def hashear_contrasena(self, contrasena: str) -> str:
+        return f"$fake${contrasena}"
 
-    def verify_password(self, password: str, password_hash: str) -> bool:
-        self.verify_calls.append((password, password_hash))
-        return password_hash == f"$fake${password}"
+    def verificar_contrasena(self, contrasena: str, hash_contrasena: str) -> bool:
+        self.verify_calls.append((contrasena, hash_contrasena))
+        return hash_contrasena == f"$fake${contrasena}"
 
 
-class FakeTokenIssuer(TokenIssuerPort):
+class EmisorTokenFalso(PuertoEmisorToken):
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, str]]] = []
 
-    def issue_token(self, subject: str, claims: dict[str, str]) -> str:
-        self.calls.append((subject, claims))
-        return f"token-for-{subject}"
+    def emitir_token(self, sujeto: str, claims: dict[str, str]) -> str:
+        self.calls.append((sujeto, claims))
+        return f"token-for-{sujeto}"
 
 
 def _registered_use_case(
     password: str = "Password123!",
-) -> tuple[LoginFarmer, Farmer, FakePasswordHasher, FakeTokenIssuer]:
-    repository = InMemoryFarmerRepository()
-    hasher = FakePasswordHasher()
-    tokens = FakeTokenIssuer()
-    farmer = Farmer.register(
-        names="Juan",
-        last_names="Pérez",
+) -> tuple[IniciarSesionAgricultor, Agricultor, HasherContrasenaFalso, EmisorTokenFalso]:
+    repository = RepositorioAgricultorEnMemoria()
+    hasher = HasherContrasenaFalso()
+    tokens = EmisorTokenFalso()
+    agricultor = Agricultor.registrar(
+        nombres="Juan",
+        apellidos="Pérez",
         email=Email("juan@example.com"),
-        password_hash=PasswordHash(hasher.hash_password(password)),
+        hash_contrasena=HashContrasena(hasher.hashear_contrasena(password)),
     )
-    repository.save(farmer)
-    return LoginFarmer(repository, hasher, tokens), farmer, hasher, tokens
+    repository.guardar(agricultor)
+    return IniciarSesionAgricultor(repository, hasher, tokens), agricultor, hasher, tokens
 
 
 def test_login_farmer_success() -> None:
     use_case, farmer, hasher, tokens = _registered_use_case()
 
-    result = use_case.execute(
-        LoginFarmerCommand(email="juan@example.com", password="Password123!")
+    result = use_case.ejecutar(
+        ComandoIniciarSesionAgricultor(email="juan@example.com", contrasena="Password123!")
     )
 
     assert result.access_token == f"token-for-{farmer.id}"
     assert result.token_type == "bearer"
-    assert result.farmer.id == farmer.id
-    assert result.farmer.email == "juan@example.com"
-    assert result.farmer.names == "Juan"
+    assert result.agricultor.id == farmer.id
+    assert result.agricultor.email == "juan@example.com"
+    assert result.agricultor.nombres == "Juan"
     assert "password" not in result.__dict__
-    assert not hasattr(result.farmer, "password_hash")
-    assert hasher.verify_calls == [("Password123!", farmer.password_hash.value)]
+    assert not hasattr(result.agricultor, "hash_contrasena")
+    assert hasher.verify_calls == [("Password123!", farmer.hash_contrasena.value)]
     assert tokens.calls == [(farmer.id, {"email": "juan@example.com"})]
 
 
 def test_login_unknown_email_returns_generic_error() -> None:
     use_case, _farmer, hasher, tokens = _registered_use_case()
 
-    with pytest.raises(InvalidCredentialsError, match="Credenciales inválidas"):
-        use_case.execute(
-            LoginFarmerCommand(email="otro@example.com", password="Password123!")
+    with pytest.raises(ErrorCredencialesInvalidas, match="Credenciales inválidas"):
+        use_case.ejecutar(
+            ComandoIniciarSesionAgricultor(email="otro@example.com", contrasena="Password123!")
         )
     assert hasher.verify_calls == []
     assert tokens.calls == []
@@ -99,9 +99,9 @@ def test_login_unknown_email_returns_generic_error() -> None:
 def test_login_wrong_password_returns_generic_error() -> None:
     use_case, _farmer, hasher, tokens = _registered_use_case()
 
-    with pytest.raises(InvalidCredentialsError, match="Credenciales inválidas"):
-        use_case.execute(
-            LoginFarmerCommand(email="juan@example.com", password="WrongPass1")
+    with pytest.raises(ErrorCredencialesInvalidas, match="Credenciales inválidas"):
+        use_case.ejecutar(
+            ComandoIniciarSesionAgricultor(email="juan@example.com", contrasena="WrongPass1")
         )
     assert len(hasher.verify_calls) == 1
     assert tokens.calls == []
@@ -109,14 +109,16 @@ def test_login_wrong_password_returns_generic_error() -> None:
 
 def test_login_invalid_email() -> None:
     use_case, _farmer, _hasher, _tokens = _registered_use_case()
-    with pytest.raises(InvalidEmailError):
-        use_case.execute(LoginFarmerCommand(email="no-es-correo", password="Password123!"))
+    with pytest.raises(ErrorCorreoInvalido):
+        use_case.ejecutar(
+            ComandoIniciarSesionAgricultor(email="no-es-correo", contrasena="Password123!")
+        )
 
 
 def test_login_result_does_not_leak_password_hash() -> None:
     use_case, _farmer, _hasher, _tokens = _registered_use_case()
-    result = use_case.execute(
-        LoginFarmerCommand(email="juan@example.com", password="Password123!")
+    result = use_case.ejecutar(
+        ComandoIniciarSesionAgricultor(email="juan@example.com", contrasena="Password123!")
     )
     dumped = str(result)
     assert "password_hash" not in dumped
@@ -129,11 +131,11 @@ def test_login_use_case_depends_on_ports_not_libraries() -> None:
         / "app"
         / "application"
         / "useCases"
-        / "login_farmer.py"
+        / "iniciar_sesion_agricultor.py"
     ).read_text(encoding="utf-8").lower()
-    assert "farmerrepositoryport" in source
-    assert "passwordhasherport" in source
-    assert "tokenissuerport" in source
+    assert "puertorepositorioagricultor" in source
+    assert "puertohashercontrasena" in source
+    assert "puertoemisortoken" in source
     assert "import jwt" not in source
     assert "from jwt" not in source
     assert "import bcrypt" not in source
@@ -141,5 +143,5 @@ def test_login_use_case_depends_on_ports_not_libraries() -> None:
     assert "fastapi" not in source
     assert "sqlalchemy" not in source
     assert "pydantic" not in source
-    assert "jwttokenissuer" not in source
-    assert "bcryptpasswordhasher" not in source
+    assert "emisortokenjwt" not in source
+    assert "hashercontrasenabcrypt" not in source

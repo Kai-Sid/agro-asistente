@@ -167,11 +167,11 @@ curl -X POST http://127.0.0.1:8000/api/v1/queries `
   -d "{\"text\":\"¿Qué puedo hacer para mejorar el cultivo de papa?\"}"
 ```
 
-Respuesta esperada: HTTP 201 con `id`, `text`, `answer`, `generation_method: template`, `created_at` y el `context` utilizado (cultivo, región, predio). No se devuelve contraseña ni el token.
+Respuesta esperada: HTTP 201 con `id`, `text`, `answer`, `generation_method: ollama`, `created_at` y el `context` utilizado (cultivo, región, predio). No se devuelve contraseña ni el token.
 
-Sin token o con JWT inválido/expirado: HTTP 401. Consulta vacía: HTTP 422. Agricultor sin contexto seleccionado: HTTP 409.
+Sin token o con JWT inválido/expirado: HTTP 401. Consulta vacía: HTTP 422. Agricultor sin contexto seleccionado: HTTP 409. Si Ollama no está en ejecución o el modelo falta: HTTP 503 (mensaje controlado; no se usa plantilla en silencio).
 
-La respuesta es una plantilla de PMV1 construida con las evidencias RAG (HU-06). No hay un modelo de IA externo.
+La respuesta del PMV1 la genera el SLM local (Ollama + Qwen2.5) a partir de las evidencias RAG. Fine-tuning no aplica.
 
 Pantalla: [http://localhost:5173/query](http://localhost:5173/query)
 
@@ -219,15 +219,55 @@ curl -X POST http://127.0.0.1:8000/api/v1/queries `
   -d "{\"text\":\"¿Cómo riego la papa en floración?\"}"
 ```
 
-Respuesta esperada: HTTP 201 con `answer` basada en la base de conocimiento, `evidences` (documento, fragmento, relevancia) y `generation_method: template`.
+Respuesta esperada: HTTP 201 con `answer` basada en la base de conocimiento, `evidences` (documento, fragmento, relevancia) y `generation_method: ollama`.
 
-Sin resultados relevantes: `evidences` vacío y el texto indica que no se encontró información suficiente. No se inventa evidencia.
+Sin resultados relevantes: `evidences` vacío y el modelo debe indicar que no se encontró información suficiente. No se inventa evidencia.
 
-Sin token: HTTP 401. Consulta vacía: HTTP 422. Sin contexto seleccionado: HTTP 409.
+Sin token: HTTP 401. Consulta vacía: HTTP 422. Sin contexto seleccionado: HTTP 409. Ollama caído o modelo ausente: HTTP 503.
 
-Los embeddings de PMV1 son léxicos locales (hashing de tokens). No hay API externa de IA todavía.
+Los embeddings de recuperación de PMV1 son léxicos locales (hashing de tokens). La generación sí usa el SLM en Ollama.
 
 Pantalla: [http://localhost:5173/query](http://localhost:5173/query)
+
+## 12. Ollama y Qwen2.5 (PMV1)
+
+1. Instalar [Ollama](https://ollama.com) y dejarlo en ejecución:
+
+```powershell
+ollama serve
+ollama pull qwen2.5:1.5b
+```
+
+2. Copiar `backend/.env.example` a `backend/.env` y revisar:
+
+- `GENERATION_PROVIDER=ollama`
+- `OLLAMA_BASE_URL=http://127.0.0.1:11434`
+- `OLLAMA_MODEL=qwen2.5:1.5b`
+- `OLLAMA_TIMEOUT_SECONDS=90`
+
+**Nota de modelo:** el documento del curso nombra «Qwen2.5 1.8B». Ollama no ofrece el tag `qwen2.5:1.8b`. El valor por defecto es `qwen2.5:1.5b` (familia Qwen2.5, tamaño oficial más cercano). Si el laboratorio instala otro tag, cámbielo solo en `OLLAMA_MODEL`.
+
+`GENERATION_PROVIDER=template` queda para pytest (sin Ollama) y no debe usarse para afirmar que Qwen respondió.
+
+## 13. Evaluación RAGAS (línea base)
+
+La primera evaluación del PMV1 está en `backend/evaluation/`. Documentación: `backend/evaluation/README.md`.
+
+```powershell
+cd backend
+python -m evaluation.run_baseline
+```
+
+Requisitos: `GENERATION_PROVIDER=ollama`, Ollama con el modelo de `OLLAMA_MODEL`, y Chroma indexado. **No** usa plantilla. Si Ollama no responde, el script se detiene y no inventa métricas.
+
+Google Colab Pro: notebook opcional `backend/evaluation/ragas_baseline.ipynb` (no ejecutado en esta entrega).
+
+Una prueba de integración opcional:
+
+```powershell
+$env:OLLAMA_INTEGRATION="1"
+pytest tests/test_generacion_ollama.py -m integration
+```
 
 ## Variables de entorno
 
@@ -240,7 +280,11 @@ Configuración relevante de HU-06:
 - `RAG_TOP_K` — cantidad de fragmentos a recuperar (3)
 - `RAG_MIN_SIMILARITY` — umbral mínimo de similitud (0.12)
 - `CHUNK_SIZE` — tamaño máximo de fragmento en caracteres (500)
-- `EMBEDDING_PROVIDER` — `local` (PMV1) o `external` (placeholder de Sesión 3)
+- `EMBEDDING_PROVIDER` — `local` (PMV1) o `external` (placeholder)
+- `GENERATION_PROVIDER` — `ollama` (PMV1) o `template` (pruebas)
+- `OLLAMA_BASE_URL` — por defecto `http://127.0.0.1:11434`
+- `OLLAMA_MODEL` — por defecto `qwen2.5:1.5b` (ver nota Qwen2.5 1.8B más arriba)
+- `OLLAMA_TIMEOUT_SECONDS` — por defecto `90`
 
 ## Puertos locales
 

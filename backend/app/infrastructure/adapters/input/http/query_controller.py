@@ -2,18 +2,19 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.domain.exceptions import (
-    DomainError,
-    InvalidQueryTextError,
-    InvalidTokenError,
-    SelectedContextNotFoundError,
+    ErrorContextoSeleccionadoNoEncontrado,
+    ErrorDominio,
+    ErrorGeneracionTexto,
+    ErrorTextoConsultaInvalido,
+    ErrorTokenInvalido,
 )
-from app.domain.ports.input.submit_query_port import SubmitQueryCommand
-from app.domain.valueObjects.query_text import QueryText
+from app.domain.ports.input.registrar_consulta_port import ComandoRegistrarConsulta
+from app.domain.valueObjects.texto_consulta import TextoConsulta
 from app.infrastructure.composition import CompositionRoot
 
 
 class SubmitQueryRequest(BaseModel):
-    text: str = Field(min_length=1, max_length=QueryText.MAX_LENGTH)
+    text: str = Field(min_length=1, max_length=TextoConsulta.MAX_LENGTH)
 
 
 class QueryContextResponse(BaseModel):
@@ -60,13 +61,13 @@ def create_query_router(container: CompositionRoot) -> APIRouter:
                 detail="No autenticado",
             )
         try:
-            identity = container.token_verifier_port.verify(token)
-        except InvalidTokenError as error:
+            identity = container.puerto_verificador_token.verificar(token)
+        except ErrorTokenInvalido as error:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=str(error),
             ) from error
-        return identity.farmer_id
+        return identity.agricultor_id
 
     @router.post(
         "",
@@ -77,46 +78,51 @@ def create_query_router(container: CompositionRoot) -> APIRouter:
         payload: SubmitQueryRequest,
         farmer_id: str = Depends(current_farmer_id),
     ) -> SubmitQueryResponse:
-        command = SubmitQueryCommand(farmer_id=farmer_id, text=payload.text)
+        command = ComandoRegistrarConsulta(agricultor_id=farmer_id, texto=payload.text)
         try:
-            result = container.submit_query_port.execute(command)
-        except InvalidQueryTextError as error:
+            result = container.puerto_registrar_consulta.ejecutar(command)
+        except ErrorTextoConsultaInvalido as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
             ) from error
-        except SelectedContextNotFoundError as error:
+        except ErrorContextoSeleccionadoNoEncontrado as error:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(error),
             ) from error
-        except DomainError as error:
+        except ErrorGeneracionTexto as error:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(error),
+            ) from error
+        except ErrorDominio as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
             ) from error
         return SubmitQueryResponse(
             id=result.id,
-            text=result.text,
-            answer=result.answer,
-            generation_method=result.generation_method,
-            created_at=result.created_at,
+            text=result.texto,
+            answer=result.respuesta,
+            generation_method=result.metodo_generacion,
+            created_at=result.creado_en,
             context=QueryContextResponse(
-                id=result.context.id,
-                crop=result.context.crop,
-                region=result.context.region,
-                plot_name=result.context.plot_name,
+                id=result.contexto.id,
+                crop=result.contexto.cultivo,
+                region=result.contexto.region,
+                plot_name=result.contexto.nombre_predio,
             ),
             evidences=[
                 QueryEvidenceResponse(
-                    document_id=item.document_id,
-                    document_title=item.document_title,
-                    chunk_id=item.chunk_id,
-                    excerpt=item.excerpt,
-                    similarity_score=item.similarity_score,
-                    rank_order=item.rank_order,
+                    document_id=item.documento_id,
+                    document_title=item.titulo_documento,
+                    chunk_id=item.fragmento_id,
+                    excerpt=item.extracto,
+                    similarity_score=item.puntaje_similitud,
+                    rank_order=item.orden_relevancia,
                 )
-                for item in result.evidences
+                for item in result.evidencias
             ],
         )
 

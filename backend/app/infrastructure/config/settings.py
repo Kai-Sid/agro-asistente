@@ -1,4 +1,5 @@
 from functools import lru_cache
+from urllib.parse import quote_plus
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -40,6 +41,15 @@ class Settings(BaseSettings):
     embedding_api_key: str = ""
     embedding_model: str = ""
 
+    generation_provider: str = "ollama"
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = "qwen2.5:1.5b"
+    ollama_timeout_seconds: int = 90
+
+    senamhi_wis2_base_url: str = "https://wis.senamhi.gob.pe/oapi"
+    senamhi_wis2_collection: str = "urn:wmo:md:pe-senamhi:synop-hourly"
+    senamhi_wis2_timeout_seconds: int = 20
+
     cors_origins: str = "http://localhost:5173"
 
     @property
@@ -48,13 +58,17 @@ class Settings(BaseSettings):
 
     @property
     def mysql_url(self) -> str:
-        if self.mysql_password:
-            auth = f"{self.mysql_user}:{self.mysql_password}"
+        user = quote_plus((self.mysql_user or "").strip())
+        password = quote_plus(self.mysql_password) if self.mysql_password else ""
+        host = (self.mysql_host or "localhost").strip()
+        database = (self.mysql_database or "").strip()
+        if password:
+            auth = f"{user}:{password}"
         else:
-            auth = self.mysql_user
+            auth = user
         return (
-            f"mysql+pymysql://{auth}@{self.mysql_host}:{self.mysql_port}/"
-            f"{self.mysql_database}?charset=utf8mb4"
+            f"mysql+pymysql://{auth}@{host}:{self.mysql_port}/"
+            f"{database}?charset=utf8mb4"
         )
 
 

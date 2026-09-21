@@ -19,7 +19,8 @@ class PasajeRecuperado:
 class PuertoGeneracionTexto(ABC):
     """Puerto de salida para generar el texto de una respuesta agrícola.
 
-    PMV1 usa una plantilla. El dominio no conoce el adaptador concreto.
+    PMV1 usa un SLM local (Ollama) detrás de un adaptador de infraestructura.
+    El dominio no conoce el proveedor concreto ni el nombre del modelo.
     """
 
     @abstractmethod

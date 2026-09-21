@@ -62,8 +62,8 @@ export default function QueryPage() {
         <h1>Consulta agrícola</h1>
         <p className="lead">
           Escribe tu consulta en lenguaje natural. El sistema recupera fragmentos de la
-          base de conocimiento (RAG básico) y construye una respuesta inicial por plantilla.
-          Todavía no se usa un modelo de IA externo.
+          base de conocimiento (RAG básico) y genera la respuesta con el SLM local
+          (Ollama + Qwen2.5), sin fine-tuning.
         </p>
 
         <section className="context-banner">
@@ -120,8 +120,10 @@ export default function QueryPage() {
                 </dd>
                 <dt>Método</dt>
                 <dd>
-                  {result.generation_method === "template"
-                    ? "Plantilla RAG (PMV1)"
+                  {result.generation_method === "ollama"
+                    ? "Ollama / Qwen2.5 (PMV1)"
+                    : result.generation_method === "template"
+                    ? "Plantilla (pruebas / fallback explícito)"
                     : result.generation_method}
                 </dd>
                 <dt>Fecha</dt>

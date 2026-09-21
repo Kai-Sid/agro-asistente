@@ -1,4 +1,8 @@
 from app.domain.ports.output.embedding_port import EmbeddingPort
+from app.domain.ports.output.puerto_observaciones_meteorologicas import (
+    FiltroObservacionesMeteorologicas,
+    PuertoObservacionesMeteorologicas,
+)
 from app.domain.ports.output.hasher_contrasena_port import PuertoHasherContrasena
 from app.domain.ports.output.repositorio_agricultor_port import PuertoRepositorioAgricultor
 from app.domain.ports.output.repositorio_consulta_port import PuertoRepositorioConsulta
@@ -16,6 +20,8 @@ from app.domain.ports.output.vector_store_port import VectorStorePort
 
 __all__ = [
     "EmbeddingPort",
+    "FiltroObservacionesMeteorologicas",
+    "PuertoObservacionesMeteorologicas",
     "PuertoEmisorToken",
     "PuertoGeneracionTexto",
     "PuertoHasherContrasena",

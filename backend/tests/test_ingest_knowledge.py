@@ -2,14 +2,17 @@ from pathlib import Path
 
 import pytest
 
-from app.application.useCases.ingest_knowledge import IngestKnowledge
-from app.domain.entities.knowledge_document import KnowledgeDocument
-from app.domain.exceptions import DuplicateKnowledgeDocumentError, InvalidKnowledgeDocumentError
-from app.domain.ports.input.ingest_knowledge_port import IngestKnowledgeCommand
-from app.domain.ports.output.knowledge_document_repository_port import (
-    KnowledgeDocumentRepositoryPort,
+from app.application.useCases.incorporar_conocimiento import IncorporarConocimiento
+from app.domain.entities.documento_conocimiento import DocumentoConocimiento
+from app.domain.exceptions import (
+    ErrorDocumentoConocimientoDuplicado,
+    ErrorDocumentoConocimientoInvalido,
 )
-from app.domain.valueObjects.content_hash import ContentHash
+from app.domain.ports.input.incorporar_conocimiento_port import ComandoIncorporarConocimiento
+from app.domain.ports.output.repositorio_documento_conocimiento_port import (
+    PuertoRepositorioDocumentoConocimiento,
+)
+from app.domain.valueObjects.hash_contenido import HashContenido
 
 CONTENT = """# Riego de papa (material de prueba)
 
@@ -17,80 +20,80 @@ Texto de prueba para HU-05. No es una guía oficial.
 """
 
 
-class InMemoryKnowledgeRepository(KnowledgeDocumentRepositoryPort):
+class RepositorioConocimientoEnMemoria(PuertoRepositorioDocumentoConocimiento):
     def __init__(self) -> None:
-        self.documents: list[KnowledgeDocument] = []
-        self.contents: dict[str, str] = {}
+        self.documentos: list[DocumentoConocimiento] = []
+        self.contenidos: dict[str, str] = {}
 
-    def exists_by_hash(self, content_hash: ContentHash) -> bool:
-        return any(document.content_hash == content_hash for document in self.documents)
+    def existe_por_hash(self, hash_contenido: HashContenido) -> bool:
+        return any(documento.hash_contenido == hash_contenido for documento in self.documentos)
 
-    def save(self, document: KnowledgeDocument, content: str) -> None:
-        self.documents.append(document)
-        self.contents[document.id] = content
+    def guardar(self, documento: DocumentoConocimiento, contenido: str) -> None:
+        self.documentos.append(documento)
+        self.contenidos[documento.id] = contenido
 
-    def list_all(self) -> list[KnowledgeDocument]:
-        return list(self.documents)
+    def listar_todos(self) -> list[DocumentoConocimiento]:
+        return list(self.documentos)
 
-    def find_by_id(self, document_id: str) -> KnowledgeDocument | None:
-        for document in self.documents:
-            if document.id == document_id:
-                return document
+    def buscar_por_id(self, documento_id: str) -> DocumentoConocimiento | None:
+        for documento in self.documentos:
+            if documento.id == documento_id:
+                return documento
         return None
 
-    def read_content(self, document: KnowledgeDocument) -> str:
-        return self.contents[document.id]
+    def leer_contenido(self, documento: DocumentoConocimiento) -> str:
+        return self.contenidos[documento.id]
 
-    def update_chunk_count(self, document_id: str, chunk_count: int) -> None:
-        for document in self.documents:
-            if document.id == document_id:
-                document.chunk_count = chunk_count
+    def actualizar_cantidad_fragmentos(self, documento_id: str, cantidad_fragmentos: int) -> None:
+        for documento in self.documentos:
+            if documento.id == documento_id:
+                documento.cantidad_fragmentos = cantidad_fragmentos
                 return
 
 
-def _use_case() -> tuple[IngestKnowledge, InMemoryKnowledgeRepository]:
-    repository = InMemoryKnowledgeRepository()
-    return IngestKnowledge(repository), repository
+def _caso_de_uso() -> tuple[IncorporarConocimiento, RepositorioConocimientoEnMemoria]:
+    repositorio = RepositorioConocimientoEnMemoria()
+    return IncorporarConocimiento(repositorio), repositorio
 
 
 def test_ingest_knowledge_success() -> None:
-    use_case, repository = _use_case()
-    result = use_case.execute(
-        IngestKnowledgeCommand(title="Riego de papa", topic="papa", content=CONTENT)
+    use_case, repository = _caso_de_uso()
+    result = use_case.ejecutar(
+        ComandoIncorporarConocimiento(titulo="Riego de papa", tema="papa", contenido=CONTENT)
     )
-    assert result.status == "registered"
-    assert result.title == "Riego de papa"
-    assert result.topic == "papa"
-    assert result.chunk_count == 0
-    assert result.source_path.endswith(".md")
-    assert len(result.content_hash) == 64
-    assert len(repository.documents) == 1
+    assert result.estado == "registered"
+    assert result.titulo == "Riego de papa"
+    assert result.tema == "papa"
+    assert result.cantidad_fragmentos == 0
+    assert result.ruta_origen.endswith(".md")
+    assert len(result.hash_contenido) == 64
+    assert len(repository.documentos) == 1
 
 
 def test_ingest_knowledge_empty_content() -> None:
-    use_case, _repository = _use_case()
-    with pytest.raises(InvalidKnowledgeDocumentError, match="contenido"):
-        use_case.execute(
-            IngestKnowledgeCommand(title="Riego", topic="papa", content="   ")
+    use_case, _repository = _caso_de_uso()
+    with pytest.raises(ErrorDocumentoConocimientoInvalido, match="contenido"):
+        use_case.ejecutar(
+            ComandoIncorporarConocimiento(titulo="Riego", tema="papa", contenido="   ")
         )
 
 
 def test_ingest_knowledge_invalid_content_too_long() -> None:
-    use_case, _repository = _use_case()
-    with pytest.raises(InvalidKnowledgeDocumentError, match="longitud"):
-        use_case.execute(
-            IngestKnowledgeCommand(
-                title="Riego",
-                topic="papa",
-                content="a" * (KnowledgeDocument.CONTENT_MAX_LENGTH + 1),
+    use_case, _repository = _caso_de_uso()
+    with pytest.raises(ErrorDocumentoConocimientoInvalido, match="longitud"):
+        use_case.ejecutar(
+            ComandoIncorporarConocimiento(
+                titulo="Riego",
+                tema="papa",
+                contenido="a" * (DocumentoConocimiento.LONGITUD_MAXIMA_CONTENIDO + 1),
             )
         )
 
 
 def test_content_hash_is_deterministic() -> None:
-    first = ContentHash.from_content(CONTENT)
-    second = ContentHash.from_content(CONTENT)
-    other = ContentHash.from_content(CONTENT + " distinto")
+    first = HashContenido.desde_contenido(CONTENT)
+    second = HashContenido.desde_contenido(CONTENT)
+    other = HashContenido.desde_contenido(CONTENT + " distinto")
     assert first == second
     assert first.value == second.value
     assert first != other
@@ -98,26 +101,28 @@ def test_content_hash_is_deterministic() -> None:
 
 
 def test_ingest_knowledge_duplicate_content() -> None:
-    use_case, repository = _use_case()
-    command = IngestKnowledgeCommand(title="Riego de papa", topic="papa", content=CONTENT)
-    use_case.execute(command)
-    with pytest.raises(DuplicateKnowledgeDocumentError, match="ya está registrado"):
-        use_case.execute(
-            IngestKnowledgeCommand(title="Copia de riego", topic="papa", content=CONTENT)
+    use_case, repository = _caso_de_uso()
+    command = ComandoIncorporarConocimiento(
+        titulo="Riego de papa", tema="papa", contenido=CONTENT
+    )
+    use_case.ejecutar(command)
+    with pytest.raises(ErrorDocumentoConocimientoDuplicado, match="ya está registrado"):
+        use_case.ejecutar(
+            ComandoIncorporarConocimiento(titulo="Copia de riego", tema="papa", contenido=CONTENT)
         )
-    assert len(repository.documents) == 1
+    assert len(repository.documentos) == 1
 
 
 def test_ingest_knowledge_persists_document_and_content() -> None:
-    use_case, repository = _use_case()
-    result = use_case.execute(
-        IngestKnowledgeCommand(title="Riego de papa", topic="papa", content=CONTENT)
+    use_case, repository = _caso_de_uso()
+    result = use_case.ejecutar(
+        ComandoIncorporarConocimiento(titulo="Riego de papa", tema="papa", contenido=CONTENT)
     )
-    stored = repository.find_by_id(result.id)
+    stored = repository.buscar_por_id(result.id)
     assert stored is not None
-    assert stored.title == "Riego de papa"
-    assert repository.contents[result.id] == CONTENT.strip()
-    assert stored.chunk_count == 0
+    assert stored.titulo == "Riego de papa"
+    assert repository.contenidos[result.id] == CONTENT.strip()
+    assert stored.cantidad_fragmentos == 0
 
 
 def test_ingest_knowledge_uses_ports_not_adapters() -> None:
@@ -126,11 +131,11 @@ def test_ingest_knowledge_uses_ports_not_adapters() -> None:
         / "app"
         / "application"
         / "useCases"
-        / "ingest_knowledge.py"
+        / "incorporar_conocimiento.py"
     ).read_text(encoding="utf-8")
     lowered = source.lower()
-    assert "knowledgedocumentrepositoryport" in lowered
-    assert "mysqlknowledgedocumentrepository" not in lowered
+    assert "puertorepositoriodocumentoconocimiento" in lowered
+    assert "repositoriodocumentoconocimientomysql" not in lowered
     assert "externalembeddingadapter" not in lowered
 
 
@@ -140,7 +145,7 @@ def test_ingest_knowledge_use_case_does_not_import_frameworks_or_sdks() -> None:
         / "app"
         / "application"
         / "useCases"
-        / "ingest_knowledge.py"
+        / "incorporar_conocimiento.py"
     ).read_text(encoding="utf-8")
     lowered = source.lower()
     forbidden = (
@@ -166,7 +171,7 @@ def test_ingest_knowledge_does_not_generate_embeddings() -> None:
         / "app"
         / "application"
         / "useCases"
-        / "ingest_knowledge.py"
+        / "incorporar_conocimiento.py"
     ).read_text(encoding="utf-8")
     lowered = source.lower()
     assert "embeddingport" not in lowered

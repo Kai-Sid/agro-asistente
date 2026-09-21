@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from app.application.services.rag_retrieval_service import RagRetrievalService
+from app.application.services.servicio_recuperacion_rag import ServicioRecuperacionRag
 from app.domain.ports.output.vector_store_port import VectorRecord, VectorSearchHit, VectorStorePort
 from app.infrastructure.adapters.output.embedding.local_lexical_embedding_adapter import (
     LocalLexicalEmbeddingAdapter,
 )
 
 
-class InMemoryVectorStore(VectorStorePort):
+class AlmacenVectoresEnMemoria(VectorStorePort):
     def __init__(self) -> None:
         self.records: dict[str, VectorRecord] = {}
         self.queries: list[list[float]] = []
@@ -37,7 +37,7 @@ def _cosine(left: list[float], right: list[float]) -> float:
 
 def test_vector_store_port_search_returns_similar_chunks() -> None:
     embedding = LocalLexicalEmbeddingAdapter(dimension=32)
-    store = InMemoryVectorStore()
+    store = AlmacenVectoresEnMemoria()
     papa = embedding.embed_text("Riego frecuente de papa en floración")
     helada = embedding.embed_text("Cubrir plantones antes de una helada")
     store.upsert(
@@ -64,7 +64,7 @@ def test_vector_store_port_search_returns_similar_chunks() -> None:
 
 def test_rag_retrieval_converts_hits_into_evidences() -> None:
     embedding = LocalLexicalEmbeddingAdapter(dimension=32)
-    store = InMemoryVectorStore()
+    store = AlmacenVectoresEnMemoria()
     vector = embedding.embed_text("Riego frecuente de papa en floración")
     store.upsert(
         [
@@ -76,24 +76,24 @@ def test_rag_retrieval_converts_hits_into_evidences() -> None:
             )
         ]
     )
-    service = RagRetrievalService(
+    service = ServicioRecuperacionRag(
         embedding_port=embedding,
-        vector_store=store,
+        almacen_vectores=store,
         top_k=3,
-        min_similarity=0.1,
+        similitud_minima=0.1,
     )
-    snippets = service.retrieve("¿Cómo riego la papa en floración?")
+    snippets = service.recuperar("¿Cómo riego la papa en floración?")
     assert len(snippets) == 1
-    assert snippets[0].document_id == "doc-papa"
-    assert snippets[0].document_title == "Riego de papa"
-    assert "Riego frecuente" in snippets[0].excerpt
-    assert snippets[0].similarity_score > 0
+    assert snippets[0].documento_id == "doc-papa"
+    assert snippets[0].titulo_documento == "Riego de papa"
+    assert "Riego frecuente" in snippets[0].extracto
+    assert snippets[0].puntaje_similitud > 0
     assert store.queries
 
 
 def test_rag_retrieval_does_not_invent_evidence_below_threshold() -> None:
     embedding = LocalLexicalEmbeddingAdapter(dimension=32)
-    store = InMemoryVectorStore()
+    store = AlmacenVectoresEnMemoria()
     store.upsert(
         [
             VectorRecord(
@@ -104,13 +104,13 @@ def test_rag_retrieval_does_not_invent_evidence_below_threshold() -> None:
             )
         ]
     )
-    service = RagRetrievalService(
+    service = ServicioRecuperacionRag(
         embedding_port=embedding,
-        vector_store=store,
+        almacen_vectores=store,
         top_k=3,
-        min_similarity=0.99,
+        similitud_minima=0.99,
     )
-    snippets = service.retrieve("¿Cómo riego la papa en floración?")
+    snippets = service.recuperar("¿Cómo riego la papa en floración?")
     assert snippets == []
 
 
@@ -120,7 +120,7 @@ def test_rag_retrieval_service_does_not_import_chroma_or_sdk() -> None:
         / "app"
         / "application"
         / "services"
-        / "rag_retrieval_service.py"
+        / "servicio_recuperacion_rag.py"
     ).read_text(encoding="utf-8")
     lowered = source.lower()
     assert "embeddingport" in lowered

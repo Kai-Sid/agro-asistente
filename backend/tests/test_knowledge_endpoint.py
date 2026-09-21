@@ -51,6 +51,7 @@ def _cleanup(source_path: str) -> None:
     knowledge_dir = Path(container.settings.knowledge_dir).resolve()
     path = knowledge_dir / Path(source_path).name
     path.unlink(missing_ok=True)
+    path.with_suffix(".meta.json").unlink(missing_ok=True)
 
 
 def test_ingest_knowledge_requires_auth() -> None:
@@ -98,14 +99,13 @@ def test_ingest_knowledge_success_and_persistence() -> None:
         with engine.connect() as connection:
             row = connection.execute(
                 text(
-                    "SELECT title, content_hash, chunk_count FROM knowledge_documents WHERE id = :id"
+                    "SELECT ruta_origen, hash_contenido FROM documentos_conocimiento WHERE id = :id"
                 ),
                 {"id": body["id"]},
             ).first()
         assert row is not None
-        assert row[0] == payload["title"]
+        assert row[0] == body["source_path"]
         assert row[1] == body["content_hash"]
-        assert row[2] == 0
 
         stored_file = Path(container.settings.knowledge_dir).resolve() / Path(body["source_path"]).name
         assert stored_file.exists()
@@ -128,7 +128,7 @@ def test_ingest_knowledge_duplicate_returns_409() -> None:
         engine = create_mysql_engine(container.settings)
         with engine.connect() as connection:
             count = connection.execute(
-                text("SELECT COUNT(*) FROM knowledge_documents WHERE content_hash = :hash"),
+                text("SELECT COUNT(*) FROM documentos_conocimiento WHERE hash_contenido = :hash"),
                 {"hash": first.json()["content_hash"]},
             ).scalar_one()
         assert count == 1

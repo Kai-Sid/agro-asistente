@@ -32,3 +32,11 @@ def ping_mysql(settings: Settings | None = None) -> bool:
         return True
     except (SQLAlchemyError, OSError):
         return False
+
+
+def id_a_entero(valor: str | int) -> int:
+    return int(str(valor).strip())
+
+
+def id_a_dominio(valor: int | str) -> str:
+    return str(valor)

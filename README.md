@@ -10,11 +10,13 @@ Sistema de asistencia técnica agrícola basado en IA, con RAG básico y arquite
 - **HU-01** implementada: registro de agricultor.
 - **HU-02** implementada: inicio de sesión con JWT.
 - **HU-03** implementada: gestión y selección del contexto agrícola.
-- **HU-04** implementada: consulta agrícola en lenguaje natural con respuesta inicial por plantilla.
+- **HU-04** implementada: consulta agrícola en lenguaje natural.
 - **HU-05** implementada: base de conocimiento agrícola (ingesta, hash y duplicados).
-- **HU-06** implementada: RAG básico (chunking, embeddings léxicos locales, Chroma, evidencias y respuesta por plantilla).
+- **HU-06** implementada: RAG básico (chunking, embeddings léxicos locales, Chroma, evidencias).
+- **Generación PMV1:** RAG + Ollama + Qwen2.5 (SLM base, **sin fine-tuning**). `generation_method` vale `ollama` cuando responde el modelo y `template` solo si se fuerza el adaptador de plantilla (pruebas).
+- **RAGAS:** primera evaluación / línea base preparada en `backend/evaluation/`. La corrida oficial usa el pipeline real (Ollama, no plantilla). **Aún no hay puntuaciones ejecutadas.**
 
-No hay embeddings semánticos de un proveedor externo, ni SLM, ni RAG avanzado. `ExternalEmbeddingAdapter` queda como punto de sustitución para la Sesión 3.
+Los embeddings de recuperación siguen siendo léxicos locales. `ExternalEmbeddingAdapter` queda como punto de sustitución. Fine-tuning/LoRA **no** forma parte del PMV1.
 
 ## HU-01 — Registro de agricultor
 
@@ -81,11 +83,11 @@ React /query
     → contexto seleccionado del agricultor (JWT → farmer_id)
     → QueryRepositoryPort
     → tablas queries y responses
-    → TextGenerationPort / TemplateGenerationAdapter
-    → respuesta inicial por plantilla
+    → TextGenerationPort / AdaptadorGeneracionOllama (Qwen2.5 vía Ollama)
+    → evidencia RAG + respuesta del SLM
 ```
 
-El `farmer_id` sale del JWT, no del body. La consulta usa únicamente el contexto agrícola seleccionado por ese agricultor. A partir de HU-06, `POST /api/v1/queries` ejecuta recuperación RAG y genera la respuesta inicial con los pasajes recuperados.
+El `farmer_id` sale del JWT, no del body. La consulta usa únicamente el contexto agrícola seleccionado por ese agricultor. `POST /api/v1/queries` ejecuta recuperación RAG y genera la respuesta con el SLM local (Ollama). Si Ollama no está disponible, el API responde HTTP 503 con un mensaje controlado; no se finge que el modelo haya contestado.
 
 ## HU-05 — Base de conocimiento agrícola
 
@@ -126,7 +128,7 @@ React /query
     → EmbeddingPort + VectorStorePort
     → Chroma (colección agro_knowledge_pmv1)
     → evidencias
-    → TextGenerationPort / TemplateGenerationAdapter
+    → PuertoGeneracionTexto / AdaptadorGeneracionOllama
     → tablas queries, responses y evidences
 ```
 
@@ -139,7 +141,9 @@ POST /api/v1/knowledge/index
     → EmbeddingPort → VectorStorePort → Chroma
 ```
 
-Los embeddings actuales son **léxicos locales** (`LocalLexicalEmbeddingAdapter`: hashing de tokens). No son embeddings semánticos neuronales ni una API externa de IA. El adaptador `ExternalEmbeddingAdapter` permanece listo para la Sesión 3.
+Los embeddings actuales son **léxicos locales** (`LocalLexicalEmbeddingAdapter`: hashing de tokens). No son embeddings semánticos neuronales. El adaptador `ExternalEmbeddingAdapter` permanece como punto de sustitución.
+
+La generación del PMV1 es **Qwen2.5 en Ollama**, configurable con `OLLAMA_MODEL` (ver nota del tag en `docs/INSTALACION.md`). No hay fine-tuning.
 
 Ver [`docs/INSTALACION.md`](docs/INSTALACION.md) y [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 
@@ -148,6 +152,7 @@ Ver [`docs/INSTALACION.md`](docs/INSTALACION.md) y [`docs/ARQUITECTURA.md`](docs
 ```text
 agro-asistente/
 ├── backend/      FastAPI + dominio + aplicación + infraestructura
+│   └── evaluation/  línea base RAGAS (fuera de domain/application)
 ├── frontend/     React + Vite
 ├── database/     schema.sql
 ├── knowledge/    documentos agrícolas de prueba (HU-05)

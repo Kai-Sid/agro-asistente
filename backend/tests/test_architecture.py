@@ -9,6 +9,8 @@ FORBIDDEN = (
     "bcrypt",
     "pymysql",
     "react",
+    "ollama",
+    "ragas",
 )
 
 
@@ -37,6 +39,8 @@ def test_application_does_not_import_frameworks() -> None:
         "pymysql",
         "pydantic",
         "jwt",
+        "ollama",
+        "ragas",
     )
 
     for python_file in application_root.rglob("*.py"):
@@ -91,6 +95,25 @@ def test_sqlalchemy_stays_inside_mysql_adapter() -> None:
         if allowed in python_file.parents or python_file.parent == allowed:
             continue
         violations.append(str(python_file.relative_to(backend_root)))
+
+    assert violations == []
+
+
+def test_httpx_stays_inside_http_output_adapters() -> None:
+    backend_root = Path(__file__).resolve().parents[1]
+    adapters_root = backend_root / "app" / "infrastructure" / "adapters" / "output"
+    allowed = {
+        adapters_root / "generation" / "adaptador_generacion_ollama.py",
+        adapters_root / "senamhi" / "adaptador_senamhi_wis2.py",
+    }
+    violations: list[str] = []
+
+    for python_file in (backend_root / "app").rglob("*.py"):
+        content = python_file.read_text(encoding="utf-8")
+        if "import httpx" not in content and "from httpx" not in content:
+            continue
+        if python_file not in allowed:
+            violations.append(str(python_file.relative_to(backend_root)))
 
     assert violations == []
 

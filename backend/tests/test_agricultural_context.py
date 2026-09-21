@@ -2,45 +2,49 @@ from pathlib import Path
 
 import pytest
 
-from app.application.useCases.create_agricultural_context import CreateAgriculturalContext
-from app.application.useCases.list_agricultural_contexts import ListAgriculturalContexts
-from app.application.useCases.select_agricultural_context import SelectAgriculturalContext
-from app.domain.entities.agricultural_context import AgriculturalContext
-from app.domain.exceptions import ContextNotFoundError, InvalidContextDataError
-from app.domain.ports.input.manage_context_port import (
-    CreateAgriculturalContextCommand,
-    SelectAgriculturalContextCommand,
+from app.application.useCases.crear_contexto_agricola import CrearContextoAgricola
+from app.application.useCases.listar_contextos_agricolas import ListarContextosAgricolas
+from app.application.useCases.seleccionar_contexto_agricola import SeleccionarContextoAgricola
+from app.domain.entities.contexto_agricola import ContextoAgricola
+from app.domain.exceptions import ErrorContextoNoEncontrado, ErrorDatosContextoInvalidos
+from app.domain.ports.input.gestionar_contexto_port import (
+    ComandoCrearContextoAgricola,
+    ComandoSeleccionarContextoAgricola,
 )
-from app.domain.ports.output.agricultural_context_repository_port import (
-    AgriculturalContextRepositoryPort,
+from app.domain.ports.output.repositorio_contexto_agricola_port import (
+    PuertoRepositorioContextoAgricola,
 )
 
 
-class InMemoryContextRepository(AgriculturalContextRepositoryPort):
+class RepositorioContextoEnMemoria(PuertoRepositorioContextoAgricola):
     def __init__(self) -> None:
-        self.contexts: list[AgriculturalContext] = []
+        self.contextos: list[ContextoAgricola] = []
 
-    def save(self, context: AgriculturalContext) -> None:
-        self.contexts.append(context)
+    def guardar(self, contexto: ContextoAgricola) -> None:
+        self.contextos.append(contexto)
 
-    def list_by_farmer(self, farmer_id: str) -> list[AgriculturalContext]:
-        return [context for context in self.contexts if context.farmer_id == farmer_id]
+    def listar_por_agricultor(self, agricultor_id: str) -> list[ContextoAgricola]:
+        return [contexto for contexto in self.contextos if contexto.agricultor_id == agricultor_id]
 
-    def find_by_id_for_farmer(self, context_id: str, farmer_id: str) -> AgriculturalContext | None:
-        for context in self.contexts:
-            if context.id == context_id and context.farmer_id == farmer_id:
-                return context
+    def buscar_por_id_para_agricultor(
+        self, contexto_id: str, agricultor_id: str
+    ) -> ContextoAgricola | None:
+        for contexto in self.contextos:
+            if contexto.id == contexto_id and contexto.agricultor_id == agricultor_id:
+                return contexto
         return None
 
-    def select_for_farmer(self, context_id: str, farmer_id: str) -> AgriculturalContext | None:
-        target = self.find_by_id_for_farmer(context_id, farmer_id)
-        if target is None:
+    def seleccionar_para_agricultor(
+        self, contexto_id: str, agricultor_id: str
+    ) -> ContextoAgricola | None:
+        objetivo = self.buscar_por_id_para_agricultor(contexto_id, agricultor_id)
+        if objetivo is None:
             return None
-        for context in self.contexts:
-            if context.farmer_id == farmer_id:
-                context.mark_unselected()
-        target.mark_selected()
-        return target
+        for contexto in self.contextos:
+            if contexto.agricultor_id == agricultor_id:
+                contexto.marcar_no_seleccionado()
+        objetivo.marcar_seleccionado()
+        return objetivo
 
 
 FARMER_A = "farmer-a"
@@ -48,88 +52,88 @@ FARMER_B = "farmer-b"
 
 
 def _create(
-    repository: InMemoryContextRepository,
+    repository: RepositorioContextoEnMemoria,
     farmer_id: str = FARMER_A,
     crop: str = "papa",
     region: str = "Huancayo",
 ) -> str:
-    use_case = CreateAgriculturalContext(repository)
-    result = use_case.execute(
-        CreateAgriculturalContextCommand(
-            farmer_id=farmer_id,
-            plot_name="Parcela 1",
-            crop=crop,
+    use_case = CrearContextoAgricola(repository)
+    result = use_case.ejecutar(
+        ComandoCrearContextoAgricola(
+            agricultor_id=farmer_id,
+            nombre_predio="Parcela 1",
+            cultivo=crop,
             region=region,
-            notes="Riego por gravedad",
+            observaciones="Riego por gravedad",
         )
     )
     return result.id
 
 
 def test_create_agricultural_context() -> None:
-    repository = InMemoryContextRepository()
-    result = CreateAgriculturalContext(repository).execute(
-        CreateAgriculturalContextCommand(
-            farmer_id=FARMER_A,
-            plot_name="Parcela 1",
-            crop="papa",
+    repository = RepositorioContextoEnMemoria()
+    result = CrearContextoAgricola(repository).ejecutar(
+        ComandoCrearContextoAgricola(
+            agricultor_id=FARMER_A,
+            nombre_predio="Parcela 1",
+            cultivo="papa",
             region="Huancayo",
-            notes=None,
+            observaciones=None,
         )
     )
-    assert result.farmer_id == FARMER_A
-    assert result.crop == "papa"
+    assert result.agricultor_id == FARMER_A
+    assert result.cultivo == "papa"
     assert result.region == "Huancayo"
-    assert result.is_selected is False
-    assert len(repository.contexts) == 1
+    assert result.esta_seleccionado is False
+    assert len(repository.contextos) == 1
 
 
 def test_list_contexts_only_returns_authenticated_farmer() -> None:
-    repository = InMemoryContextRepository()
+    repository = RepositorioContextoEnMemoria()
     _create(repository, FARMER_A, crop="papa")
     _create(repository, FARMER_B, crop="maiz")
 
-    listed = ListAgriculturalContexts(repository).execute(FARMER_A)
+    listed = ListarContextosAgricolas(repository).ejecutar(FARMER_A)
     assert len(listed) == 1
-    assert listed[0].crop == "papa"
-    assert all(item.farmer_id == FARMER_A for item in listed)
+    assert listed[0].cultivo == "papa"
+    assert all(item.agricultor_id == FARMER_A for item in listed)
 
 
 def test_select_own_context() -> None:
-    repository = InMemoryContextRepository()
+    repository = RepositorioContextoEnMemoria()
     first = _create(repository, FARMER_A, crop="papa")
     second = _create(repository, FARMER_A, crop="maiz")
 
-    selected = SelectAgriculturalContext(repository).execute(
-        SelectAgriculturalContextCommand(farmer_id=FARMER_A, context_id=second)
+    selected = SeleccionarContextoAgricola(repository).ejecutar(
+        ComandoSeleccionarContextoAgricola(agricultor_id=FARMER_A, contexto_id=second)
     )
     assert selected.id == second
-    assert selected.is_selected is True
-    stored_first = repository.find_by_id_for_farmer(first, FARMER_A)
-    stored_second = repository.find_by_id_for_farmer(second, FARMER_A)
-    assert stored_first is not None and stored_first.is_selected is False
-    assert stored_second is not None and stored_second.is_selected is True
+    assert selected.esta_seleccionado is True
+    stored_first = repository.buscar_por_id_para_agricultor(first, FARMER_A)
+    stored_second = repository.buscar_por_id_para_agricultor(second, FARMER_A)
+    assert stored_first is not None and stored_first.esta_seleccionado is False
+    assert stored_second is not None and stored_second.esta_seleccionado is True
 
 
 def test_cannot_select_another_farmer_context() -> None:
-    repository = InMemoryContextRepository()
+    repository = RepositorioContextoEnMemoria()
     context_b = _create(repository, FARMER_B, crop="maiz")
-    with pytest.raises(ContextNotFoundError):
-        SelectAgriculturalContext(repository).execute(
-            SelectAgriculturalContextCommand(farmer_id=FARMER_A, context_id=context_b)
+    with pytest.raises(ErrorContextoNoEncontrado):
+        SeleccionarContextoAgricola(repository).ejecutar(
+            ComandoSeleccionarContextoAgricola(agricultor_id=FARMER_A, contexto_id=context_b)
         )
 
 
 def test_create_requires_crop() -> None:
-    repository = InMemoryContextRepository()
-    with pytest.raises(InvalidContextDataError, match="cultivo"):
-        CreateAgriculturalContext(repository).execute(
-            CreateAgriculturalContextCommand(
-                farmer_id=FARMER_A,
-                plot_name=None,
-                crop="  ",
+    repository = RepositorioContextoEnMemoria()
+    with pytest.raises(ErrorDatosContextoInvalidos, match="cultivo"):
+        CrearContextoAgricola(repository).ejecutar(
+            ComandoCrearContextoAgricola(
+                agricultor_id=FARMER_A,
+                nombre_predio=None,
+                cultivo="  ",
                 region="Huancayo",
-                notes=None,
+                observaciones=None,
             )
         )
 
@@ -138,9 +142,9 @@ def test_context_use_cases_do_not_import_frameworks() -> None:
     use_cases = Path(__file__).resolve().parents[1] / "app" / "application" / "useCases"
     forbidden = ("fastapi", "sqlalchemy", "import jwt", "from jwt", "import bcrypt")
     for name in (
-        "create_agricultural_context.py",
-        "list_agricultural_contexts.py",
-        "select_agricultural_context.py",
+        "crear_contexto_agricola.py",
+        "listar_contextos_agricolas.py",
+        "seleccionar_contexto_agricola.py",
     ):
         source = (use_cases / name).read_text(encoding="utf-8").lower()
         for item in forbidden:

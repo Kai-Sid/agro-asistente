@@ -1,4 +1,4 @@
-from sqlalchemy import DateTime, String, select
+from sqlalchemy import DateTime, Integer, String, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Mapped, mapped_column, sessionmaker
 
@@ -7,18 +7,17 @@ from app.domain.exceptions import ErrorCorreoDuplicado
 from app.domain.ports.output.repositorio_agricultor_port import PuertoRepositorioAgricultor
 from app.domain.valueObjects.email import Email
 from app.domain.valueObjects.hash_contrasena import HashContrasena
-from app.infrastructure.adapters.output.mysql.connection import Base
+from app.infrastructure.adapters.output.mysql.connection import Base, id_a_dominio
 
 
 class RegistroAgricultor(Base):
-    __tablename__ = "farmers"
+    __tablename__ = "agricultores"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    full_name: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str] = mapped_column(String(190), unique=True, nullable=False)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    created_at: Mapped[object] = mapped_column(DateTime, nullable=False)
-    updated_at: Mapped[object] = mapped_column(DateTime, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nombre_completo: Mapped[str] = mapped_column(String(150), nullable=False)
+    correo: Mapped[str] = mapped_column(String(150), unique=True, nullable=False)
+    contrasena_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    fecha_creacion: Mapped[object] = mapped_column(DateTime, nullable=True)
 
 
 class RepositorioAgricultorMysql(PuertoRepositorioAgricultor):
@@ -28,14 +27,14 @@ class RepositorioAgricultorMysql(PuertoRepositorioAgricultor):
     def existe_por_correo(self, email: Email) -> bool:
         with self._session_factory() as session:
             agricultor_id = session.scalar(
-                select(RegistroAgricultor.id).where(RegistroAgricultor.email == email.value)
+                select(RegistroAgricultor.id).where(RegistroAgricultor.correo == email.value)
             )
             return agricultor_id is not None
 
     def buscar_por_correo(self, email: Email) -> Agricultor | None:
         with self._session_factory() as session:
             registro = session.scalar(
-                select(RegistroAgricultor).where(RegistroAgricultor.email == email.value)
+                select(RegistroAgricultor).where(RegistroAgricultor.correo == email.value)
             )
             if registro is None:
                 return None
@@ -43,16 +42,16 @@ class RepositorioAgricultorMysql(PuertoRepositorioAgricultor):
 
     def guardar(self, agricultor: Agricultor) -> None:
         registro = RegistroAgricultor(
-            id=agricultor.id,
-            full_name=agricultor.nombre_completo,
-            email=agricultor.email.value,
-            password_hash=agricultor.hash_contrasena.value,
-            created_at=agricultor.creado_en,
-            updated_at=agricultor.actualizado_en,
+            nombre_completo=agricultor.nombre_completo[:150],
+            correo=agricultor.email.value[:150],
+            contrasena_hash=agricultor.hash_contrasena.value,
+            fecha_creacion=agricultor.creado_en,
         )
         with self._session_factory() as session:
             session.add(registro)
             try:
+                session.flush()
+                agricultor.id = id_a_dominio(registro.id)
                 session.commit()
             except IntegrityError as error:
                 session.rollback()
@@ -61,15 +60,16 @@ class RepositorioAgricultorMysql(PuertoRepositorioAgricultor):
                 ) from error
 
     def _a_entidad(self, registro: RegistroAgricultor) -> Agricultor:
-        nombres, apellidos = _separar_nombre_completo(registro.full_name)
+        nombres, apellidos = _separar_nombre_completo(registro.nombre_completo)
+        creado = registro.fecha_creacion
         return Agricultor(
-            agricultor_id=registro.id,
+            agricultor_id=id_a_dominio(registro.id),
             nombres=nombres,
             apellidos=apellidos,
-            email=Email(registro.email),
-            hash_contrasena=HashContrasena(registro.password_hash),
-            creado_en=registro.created_at,
-            actualizado_en=registro.updated_at,
+            email=Email(registro.correo),
+            hash_contrasena=HashContrasena(registro.contrasena_hash),
+            creado_en=creado,
+            actualizado_en=creado,
         )
 
 

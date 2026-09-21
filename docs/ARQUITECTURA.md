@@ -22,12 +22,13 @@ Adaptadores de salida
   - Chroma
   - Seguridad (JWT / bcrypt)
   - Embeddings externos
-  - Generación por plantilla (PMV1)
+  - Generación por plantilla (solo pruebas / `GENERATION_PROVIDER=template`)
+  - Ollama + Qwen2.5 (PMV1, `GENERATION_PROVIDER=ollama`)
 ```
 
 ## Reglas
 
-1. `domain` no importa FastAPI, SQLAlchemy, Chroma, React ni SDKs de IA.
+1. `domain` no importa FastAPI, SQLAlchemy, Chroma, Ollama, React, httpx ni SDKs de IA.
 2. `application` depende de `domain` y de puertos.
 3. `infrastructure` implementa los puertos.
 4. Los controladores HTTP solo hablan con puertos de entrada / casos de uso (en Fase 1, `/health` es un adaptador de entrada de infraestructura).
@@ -46,20 +47,42 @@ La API concreta de embeddings no está acoplada al dominio ni a los casos de uso
 
 ## Generación de texto (PMV1)
 
+Nota de alcance: una planificación anterior dejó el SLM para PMV2 (`SLMGenerationAdapter`). El documento **Uso de herramientas modernas** asigna Ollama y Qwen2.5 1.8B al **PMV1**. El alcance actual del Hito 1 es RAG + SLM base **sin fine-tuning**. LoRA sigue fuera del PMV1.
+
 ```text
-TextGenerationPort
-    └── TemplateGenerationAdapter   ← HU-04 / PMV1 (respuesta inicial por plantilla)
-    └── SLMGenerationAdapter        ← PMV2 (no implementar todavía)
+PuertoGeneracionTexto
+    ├── AdaptadorGeneracionOllama     ← PMV1 (Ollama, modelo en OLLAMA_MODEL)
+    └── AdaptadorGeneracionPlantilla  ← fallback técnico / pytest
 ```
 
-HU-04 usa `TemplateGenerationAdapter`. A partir de HU-06 la plantilla se construye con las evidencias recuperadas. No hay LLM, SLM ni generación avanzada.
+`generation_method` refleja el adaptador real: `ollama` o `template`. Nunca se etiqueta como Ollama una respuesta de plantilla.
+
+El identificador del curso es «Qwen2.5 1.8B». La biblioteca de Ollama **no publica** `qwen2.5:1.8b`; la variante oficial más cercana de Qwen2.5 es `qwen2.5:1.5b` (configurable).
+
+HU-04/HU-06 recuperan evidencias RAG y el caso de uso `RegistrarConsulta` llama solo a `PuertoGeneracionTexto`.
+
+## Evaluación RAGAS (línea base PMV1)
+
+RAGAS **no** se importa en `domain` ni en `application`. Vive en `backend/evaluation/`. El script llama a los mismos adaptadores de recuperación y generación que el PMV1 (`ServicioRecuperacionRag` + `AdaptadorGeneracionOllama`). No modifica `PuertoGeneracionTexto`.
+
+Propósito: primera línea base (RAG + Ollama + Qwen2.5 sin fine-tuning). Métricas de `ragas==0.4.3`: `Faithfulness`, `LLMContextRecall`, `ResponseRelevancy`. Las puntuaciones solo existen después de `python -m evaluation.run_baseline`; ver `backend/evaluation/RESULTADOS_PENDIENTES.md` hasta esa corrida. `evaluation/ragas_compat.py` cubre un import de Vertex AI que `langchain-community` 0.4 ya no exporta; no se usa Vertex en el PMV1.
+
+### Matriz de evidencia
+
+| Herramienta | Uso en PMV1 | Estado |
+|---|---|---|
+| RAGAS | Evaluación de línea base | Preparado; ejecución real pendiente |
+| Ollama | Generación | PMV1 |
+| Qwen2.5 1.8B | SLM base (tag configurable) | Configurado vía `OLLAMA_MODEL` |
+| Python | Script de evaluación | `evaluation.run_baseline` |
+| Google Colab Pro | Ejecución opcional | Notebook no ejecutado |
 
 ## Persistencia
 
 - **MySQL:** agricultores, contexto agrícola, consultas, respuestas, catálogo de conocimiento y evidencias (`database/schema.sql`).
 - **Chroma:** índice vectorial de fragmentos (`agro_knowledge_pmv1`).
 
-MySQL y Chroma no se consideran el servicio externo IA/API exigido por la consigna. Ese rol lo cubrirá el adaptador de embeddings externos en la Sesión 3.
+MySQL y Chroma no se consideran el servicio de generación. Ese rol lo cubre **Ollama** en el PMV1 (`AdaptadorGeneracionOllama`). `ExternalEmbeddingAdapter` sigue siendo un placeholder de embeddings, no el SLM.
 
 ## Composition root
 
@@ -158,8 +181,8 @@ Componentes:
 | Dominio | `Query`, `Response`, `QueryText` |
 | Puerto de entrada | `SubmitQueryPort` |
 | Caso de uso | `SubmitQuery` |
-| Puertos de salida | `QueryRepositoryPort`, `TextGenerationPort` |
-| Adaptadores | `MysqlQueryRepository`, `TemplateGenerationAdapter` |
+| Puertos de salida | `QueryRepositoryPort`, `PuertoGeneracionTexto` |
+| Adaptadores | `MysqlQueryRepository`, `AdaptadorGeneracionOllama` (PMV1) |
 | HTTP | `POST /api/v1/queries` |
 | Frontend | `/query` |
 
@@ -172,16 +195,16 @@ SubmitQuery
         ↓
 contexto seleccionado del agricultor
         ↓
-QueryRepositoryPort                 TextGenerationPort
+QueryRepositoryPort                 PuertoGeneracionTexto
         ↓                                   ↓
-MysqlQueryRepository                TemplateGenerationAdapter
+MysqlQueryRepository                AdaptadorGeneracionOllama
         ↓
 tablas queries y responses
 ```
 
 La consulta queda asociada al agricultor autenticado, al contexto `is_selected` de ese agricultor y a `created_at`. Si no hay contexto seleccionado, el caso de uso responde con error controlado (`SelectedContextNotFoundError` → HTTP 409).
 
-HU-06 extiende `SubmitQuery` con recuperación RAG. El método de generación sigue siendo `template`.
+HU-06 extiende `RegistrarConsulta` con recuperación RAG. El método de generación del PMV1 es `ollama` cuando el SLM responde. Si Ollama falla: HTTP 503, sin fingir éxito.
 
 `ListQueryHistoryPort` no formaba parte del diseño implementado de HU-04; no se agregó `GET /api/v1/queries`.
 
@@ -231,7 +254,7 @@ Componentes:
 |---|---|
 | Dominio | `Evidence`, `EmbeddingPort`, `VectorStorePort`, `EvidenceRepositoryPort` |
 | Aplicación | `DocumentChunker`, `RagRetrievalService`, `IndexKnowledge`, `SubmitQuery` |
-| Adaptadores | `LocalLexicalEmbeddingAdapter`, `ChromaVectorStoreAdapter`, `MysqlEvidenceRepository`, `TemplateGenerationAdapter` |
+| Adaptadores | `LocalLexicalEmbeddingAdapter`, `ChromaVectorStoreAdapter`, `MysqlEvidenceRepository`, `AdaptadorGeneracionOllama` |
 | HTTP | `POST /api/v1/queries`, `POST /api/v1/knowledge/index` |
 | Frontend | `/query` (consulta, contexto, respuesta y evidencias) |
 
@@ -252,7 +275,7 @@ LocalLexicalEmbeddingAdapter   ChromaVectorStoreAdapter
         ↓
 evidencias (si hay similitud suficiente)
         ↓
-TextGenerationPort / TemplateGenerationAdapter
+PuertoGeneracionTexto / AdaptadorGeneracionOllama
         ↓
 QueryRepositoryPort + EvidenceRepositoryPort
         ↓
@@ -282,7 +305,7 @@ Reindexar el mismo documento hace `upsert` sobre los mismos ids: no duplica chun
 
 ### Recuperación
 
-`RAG_TOP_K` (3) y `RAG_MIN_SIMILARITY` (0.12) son configurables. No hay ranking avanzado. Si no hay resultados por encima del umbral, no se inventa evidencia y la plantilla indica que no se encontró información suficiente.
+`RAG_TOP_K` (3) y `RAG_MIN_SIMILARITY` (0.12) son configurables. No hay ranking avanzado. Si no hay resultados por encima del umbral, no se inventa evidencia y el SLM debe indicar que no hay información suficiente (el prompt se lo exige).
 
 ### Indexación
 

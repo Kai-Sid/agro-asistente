@@ -1,22 +1,25 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.domain.entities.knowledge_document import KnowledgeDocument
+from app.domain.entities.documento_conocimiento import DocumentoConocimiento
 from app.domain.exceptions import (
-    DomainError,
-    DuplicateKnowledgeDocumentError,
-    InvalidKnowledgeDocumentError,
-    InvalidTokenError,
-    KnowledgeFileNotFoundError,
+    ErrorArchivoConocimientoNoEncontrado,
+    ErrorDocumentoConocimientoDuplicado,
+    ErrorDocumentoConocimientoInvalido,
+    ErrorDominio,
+    ErrorTokenInvalido,
 )
-from app.domain.ports.input.ingest_knowledge_port import IngestKnowledgeCommand
+from app.domain.ports.input.incorporar_conocimiento_port import (
+    ComandoIncorporarConocimiento,
+    ResultadoDocumentoConocimiento,
+)
 from app.infrastructure.composition import CompositionRoot
 
 
 class IngestKnowledgeRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=KnowledgeDocument.TITLE_MAX_LENGTH)
-    topic: str = Field(min_length=1, max_length=KnowledgeDocument.TOPIC_MAX_LENGTH)
-    content: str = Field(min_length=1, max_length=KnowledgeDocument.CONTENT_MAX_LENGTH)
+    title: str = Field(min_length=1, max_length=DocumentoConocimiento.LONGITUD_MAXIMA_TITULO)
+    topic: str = Field(min_length=1, max_length=DocumentoConocimiento.LONGITUD_MAXIMA_TEMA)
+    content: str = Field(min_length=1, max_length=DocumentoConocimiento.LONGITUD_MAXIMA_CONTENIDO)
 
 
 class KnowledgeDocumentResponse(BaseModel):
@@ -37,6 +40,19 @@ class IndexKnowledgeResponse(BaseModel):
     documents: list[KnowledgeDocumentResponse]
 
 
+def _documento_response(resultado: ResultadoDocumentoConocimiento) -> KnowledgeDocumentResponse:
+    return KnowledgeDocumentResponse(
+        id=resultado.id,
+        title=resultado.titulo,
+        topic=resultado.tema,
+        source_path=resultado.ruta_origen,
+        content_hash=resultado.hash_contenido,
+        chunk_count=resultado.cantidad_fragmentos,
+        ingested_at=resultado.incorporado_en,
+        status=resultado.estado,
+    )
+
+
 def create_knowledge_router(container: CompositionRoot) -> APIRouter:
     router = APIRouter(prefix="/api/v1/knowledge", tags=["knowledge"])
 
@@ -55,13 +71,13 @@ def create_knowledge_router(container: CompositionRoot) -> APIRouter:
                 detail="No autenticado",
             )
         try:
-            identity = container.token_verifier_port.verify(token)
-        except InvalidTokenError as error:
+            identity = container.puerto_verificador_token.verificar(token)
+        except ErrorTokenInvalido as error:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=str(error),
             ) from error
-        return identity.farmer_id
+        return identity.agricultor_id
 
     @router.post(
         "/ingest",
@@ -72,58 +88,58 @@ def create_knowledge_router(container: CompositionRoot) -> APIRouter:
         payload: IngestKnowledgeRequest,
         _farmer_id: str = Depends(require_authenticated_farmer),
     ) -> KnowledgeDocumentResponse:
-        command = IngestKnowledgeCommand(
-            title=payload.title,
-            topic=payload.topic,
-            content=payload.content,
+        command = ComandoIncorporarConocimiento(
+            titulo=payload.title,
+            tema=payload.topic,
+            contenido=payload.content,
         )
         try:
-            result = container.ingest_knowledge_port.execute(command)
-        except DuplicateKnowledgeDocumentError as error:
+            result = container.puerto_incorporar_conocimiento.ejecutar(command)
+        except ErrorDocumentoConocimientoDuplicado as error:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(error),
             ) from error
-        except InvalidKnowledgeDocumentError as error:
+        except ErrorDocumentoConocimientoInvalido as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
             ) from error
-        except DomainError as error:
+        except ErrorDominio as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
             ) from error
-        return KnowledgeDocumentResponse(**result.__dict__)
+        return _documento_response(result)
 
     @router.post("/index", response_model=IndexKnowledgeResponse)
     def index_knowledge(
         _farmer_id: str = Depends(require_authenticated_farmer),
     ) -> IndexKnowledgeResponse:
         try:
-            result = container.index_knowledge_port.execute()
-        except KnowledgeFileNotFoundError as error:
+            result = container.puerto_indexar_conocimiento.ejecutar()
+        except ErrorArchivoConocimientoNoEncontrado as error:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(error),
             ) from error
-        except DomainError as error:
+        except ErrorDominio as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
             ) from error
         return IndexKnowledgeResponse(
-            indexed_documents=result.indexed_documents,
-            total_chunks=result.total_chunks,
+            indexed_documents=result.documentos_indexados,
+            total_chunks=result.total_fragmentos,
             collection=container.settings.chroma_collection,
-            documents=[KnowledgeDocumentResponse(**item.__dict__) for item in result.documents],
+            documents=[_documento_response(item) for item in result.documentos],
         )
 
     @router.get("/documents", response_model=list[KnowledgeDocumentResponse])
     def list_knowledge_documents(
         _farmer_id: str = Depends(require_authenticated_farmer),
     ) -> list[KnowledgeDocumentResponse]:
-        results = container.list_knowledge_documents_port.execute()
-        return [KnowledgeDocumentResponse(**item.__dict__) for item in results]
+        results = container.puerto_listar_documentos_conocimiento.ejecutar()
+        return [_documento_response(item) for item in results]
 
     return router

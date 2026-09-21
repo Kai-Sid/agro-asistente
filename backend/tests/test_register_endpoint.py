@@ -66,8 +66,8 @@ def test_password_is_stored_as_bcrypt_hash() -> None:
     response = client.post(REGISTER_URL, json=payload)
     assert response.status_code == 201
 
-    stored = container.farmer_repository_port.find_by_email(Email(payload["email"]))
+    stored = container.puerto_repositorio_agricultor.buscar_por_correo(Email(payload["email"]))
     assert stored is not None
-    assert stored.password_hash.value != payload["password"]
-    assert stored.password_hash.value.startswith("$2")
-    assert payload["password"] not in stored.password_hash.value
+    assert stored.hash_contrasena.value != payload["password"]
+    assert stored.hash_contrasena.value.startswith("$2")
+    assert payload["password"] not in stored.hash_contrasena.value

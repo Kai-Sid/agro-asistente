@@ -194,18 +194,18 @@ def test_submit_query_persists_query_and_response() -> None:
     engine = create_mysql_engine(container.settings)
     with engine.connect() as connection:
         query_row = connection.execute(
-            text("SELECT farmer_id, question_text FROM queries WHERE id = :id"),
+            text("SELECT agricultor_id, pregunta FROM consultas WHERE id = :id"),
             {"id": body["id"]},
         ).first()
         response_row = connection.execute(
             text(
-                "SELECT answer_text, generation_method FROM responses WHERE query_id = :id"
+                "SELECT respuesta, metodo_generacion FROM respuestas WHERE consulta_id = :id"
             ),
             {"id": body["id"]},
         ).first()
 
     assert query_row is not None
-    assert query_row[0] == user["farmer_id"]
+    assert str(query_row[0]) == str(user["farmer_id"])
     assert query_row[1] == QUESTION
     assert response_row is not None
     assert response_row[0] == body["answer"]

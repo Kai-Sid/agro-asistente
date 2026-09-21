@@ -22,6 +22,10 @@ node_modules/
 frontend/dist/
 frontend/build/
 
+# Puntuaciones RAGAS locales (no secretos; evitan mezclar corridas)
+backend/evaluation/results/*.json
+backend/evaluation/results/*.jsonl
+
 # Chroma vector store data
 chroma_data/
 chroma_test_data/

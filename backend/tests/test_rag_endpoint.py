@@ -4,10 +4,10 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-from app.application.services.document_chunker import DocumentChunker
-from app.application.services.rag_retrieval_service import RagRetrievalService
-from app.application.useCases.index_knowledge import IndexKnowledge
-from app.application.useCases.submit_query import SubmitQuery
+from app.application.services.fragmentador_documentos import FragmentadorDocumentos
+from app.application.services.servicio_recuperacion_rag import ServicioRecuperacionRag
+from app.application.useCases.indexar_conocimiento import IndexarConocimiento
+from app.application.useCases.registrar_consulta import RegistrarConsulta
 from app.infrastructure.adapters.output.chroma.chroma_vector_store_adapter import (
     ChromaVectorStoreAdapter,
 )
@@ -89,14 +89,15 @@ def _cleanup(source_path: str) -> None:
     knowledge_dir = Path(container.settings.knowledge_dir).resolve()
     path = knowledge_dir / Path(source_path).name
     path.unlink(missing_ok=True)
+    path.with_suffix(".meta.json").unlink(missing_ok=True)
 
 
 def _rewire_isolated_chroma(tmp_path: Path) -> tuple[object, object, object]:
     original = (
-        container.vector_store_port,
-        container.rag_retrieval_service,
-        container.submit_query_port,
-        container.index_knowledge_port,
+        container.puerto_almacen_vectores,
+        container.servicio_recuperacion_rag,
+        container.puerto_registrar_consulta,
+        container.puerto_indexar_conocimiento,
         container.embedding_port,
     )
     embedding = LocalLexicalEmbeddingAdapter(
@@ -106,36 +107,36 @@ def _rewire_isolated_chroma(tmp_path: Path) -> tuple[object, object, object]:
         persist_dir=str(tmp_path / "chroma_http"),
         collection_name="agro_knowledge_pmv1_http_test",
     )
-    retrieval = RagRetrievalService(
+    retrieval = ServicioRecuperacionRag(
         embedding_port=embedding,
-        vector_store=store,
+        almacen_vectores=store,
         top_k=container.settings.rag_top_k,
-        min_similarity=container.settings.rag_min_similarity,
+        similitud_minima=container.settings.rag_min_similarity,
     )
     container.embedding_port = embedding
-    container.vector_store_port = store
-    container.rag_retrieval_service = retrieval
-    container.submit_query_port = SubmitQuery(
-        query_repository=container.query_repository_port,
-        text_generation=container.text_generation_port,
-        rag_retrieval=retrieval,
-        evidence_repository=container.evidence_repository_port,
+    container.puerto_almacen_vectores = store
+    container.servicio_recuperacion_rag = retrieval
+    container.puerto_registrar_consulta = RegistrarConsulta(
+        repositorio_consulta=container.puerto_repositorio_consulta,
+        generacion_texto=container.puerto_generacion_texto,
+        recuperacion_rag=retrieval,
+        repositorio_evidencia=container.puerto_repositorio_evidencia,
     )
-    container.index_knowledge_port = IndexKnowledge(
-        knowledge_repository=container.knowledge_document_repository_port,
+    container.puerto_indexar_conocimiento = IndexarConocimiento(
+        repositorio_conocimiento=container.puerto_repositorio_documento_conocimiento,
         embedding_port=embedding,
-        vector_store=store,
-        chunker=DocumentChunker(max_chars=container.settings.chunk_size),
+        almacen_vectores=store,
+        fragmentador=FragmentadorDocumentos(max_chars=container.settings.chunk_size),
     )
     return original
 
 
 def _restore_chroma(original: tuple) -> None:
     (
-        container.vector_store_port,
-        container.rag_retrieval_service,
-        container.submit_query_port,
-        container.index_knowledge_port,
+        container.puerto_almacen_vectores,
+        container.servicio_recuperacion_rag,
+        container.puerto_registrar_consulta,
+        container.puerto_indexar_conocimiento,
         container.embedding_port,
     ) = original
 
@@ -208,19 +209,19 @@ def test_submit_query_with_indexed_knowledge_returns_evidences(tmp_path: Path) -
         with engine.connect() as connection:
             evidence_row = connection.execute(
                 text(
-                    "SELECT document_id, excerpt, chroma_chunk_id FROM evidences "
-                    "WHERE query_id = :id ORDER BY rank_order ASC"
+                    "SELECT documento_id, texto_fragmento FROM evidencias "
+                    "WHERE consulta_id = :id ORDER BY id ASC"
                 ),
                 {"id": query_id},
             ).first()
             response_row = connection.execute(
-                text("SELECT generation_method FROM responses WHERE query_id = :id"),
+                text("SELECT metodo_generacion FROM respuestas WHERE consulta_id = :id"),
                 {"id": query_id},
             ).first()
         assert evidence_row is not None
-        assert evidence_row[0] == document_id
+        assert str(evidence_row[0]) == str(document_id)
         assert evidence_row[1]
-        assert ":chunk:" in evidence_row[2]
+        assert ":chunk:" in evidence_row[1]
         assert response_row[0] == "template"
     finally:
         if source_path:

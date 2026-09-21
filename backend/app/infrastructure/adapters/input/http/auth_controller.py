@@ -2,15 +2,15 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.domain.exceptions import (
-    DomainError,
-    DuplicateEmailError,
-    InvalidCredentialsError,
-    InvalidEmailError,
-    InvalidFarmerDataError,
-    InvalidPasswordError,
+    ErrorContrasenaInvalida,
+    ErrorCorreoDuplicado,
+    ErrorCorreoInvalido,
+    ErrorCredencialesInvalidas,
+    ErrorDatosAgricultorInvalidos,
+    ErrorDominio,
 )
-from app.domain.ports.input.login_farmer_port import LoginFarmerCommand
-from app.domain.ports.input.register_farmer_port import RegisterFarmerCommand
+from app.domain.ports.input.iniciar_sesion_agricultor_port import ComandoIniciarSesionAgricultor
+from app.domain.ports.input.registrar_agricultor_port import ComandoRegistrarAgricultor
 from app.infrastructure.composition import CompositionRoot
 
 
@@ -55,25 +55,25 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
         response_model=RegisterFarmerResponse,
     )
     def register(payload: RegisterFarmerRequest) -> RegisterFarmerResponse:
-        command = RegisterFarmerCommand(
-            names=payload.names,
-            last_names=payload.last_names,
+        command = ComandoRegistrarAgricultor(
+            nombres=payload.names,
+            apellidos=payload.last_names,
             email=payload.email,
-            password=payload.password,
+            contrasena=payload.password,
         )
         try:
-            result = container.register_farmer_port.execute(command)
-        except DuplicateEmailError as error:
+            result = container.puerto_registrar_agricultor.ejecutar(command)
+        except ErrorCorreoDuplicado as error:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(error),
             ) from error
-        except (InvalidEmailError, InvalidPasswordError, InvalidFarmerDataError) as error:
+        except (ErrorCorreoInvalido, ErrorContrasenaInvalida, ErrorDatosAgricultorInvalidos) as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
             ) from error
-        except DomainError as error:
+        except ErrorDominio as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
@@ -81,8 +81,8 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
 
         return RegisterFarmerResponse(
             id=result.id,
-            names=result.names,
-            last_names=result.last_names,
+            names=result.nombres,
+            last_names=result.apellidos,
             email=result.email,
         )
 
@@ -92,20 +92,23 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
         response_model=LoginFarmerResponse,
     )
     def login(payload: LoginFarmerRequest) -> LoginFarmerResponse:
-        command = LoginFarmerCommand(email=payload.email, password=payload.password)
+        command = ComandoIniciarSesionAgricultor(
+            email=payload.email,
+            contrasena=payload.password,
+        )
         try:
-            result = container.login_farmer_port.execute(command)
-        except InvalidCredentialsError as error:
+            result = container.puerto_iniciar_sesion_agricultor.ejecutar(command)
+        except ErrorCredencialesInvalidas as error:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=str(error),
             ) from error
-        except InvalidEmailError as error:
+        except ErrorCorreoInvalido as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
             ) from error
-        except DomainError as error:
+        except ErrorDominio as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
@@ -115,10 +118,10 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
             access_token=result.access_token,
             token_type=result.token_type,
             farmer=AuthenticatedFarmerResponse(
-                id=result.farmer.id,
-                names=result.farmer.names,
-                last_names=result.farmer.last_names,
-                email=result.farmer.email,
+                id=result.agricultor.id,
+                names=result.agricultor.nombres,
+                last_names=result.agricultor.apellidos,
+                email=result.agricultor.email,
             ),
         )
 

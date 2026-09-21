@@ -2,15 +2,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-from app.application.services.document_chunker import DocumentChunker
-from app.application.useCases.index_knowledge import IndexKnowledge
-from app.domain.entities.knowledge_document import KnowledgeDocument
+from app.application.services.fragmentador_documentos import FragmentadorDocumentos
+from app.application.useCases.indexar_conocimiento import IndexarConocimiento
+from app.domain.entities.documento_conocimiento import DocumentoConocimiento
 from app.domain.ports.output.embedding_port import EmbeddingPort
-from app.domain.ports.output.knowledge_document_repository_port import (
-    KnowledgeDocumentRepositoryPort,
+from app.domain.ports.output.repositorio_documento_conocimiento_port import (
+    PuertoRepositorioDocumentoConocimiento,
 )
 from app.domain.ports.output.vector_store_port import VectorRecord, VectorSearchHit, VectorStorePort
-from app.domain.valueObjects.content_hash import ContentHash
+from app.domain.valueObjects.hash_contenido import HashContenido
 from app.infrastructure.adapters.output.embedding.local_lexical_embedding_adapter import (
     LocalLexicalEmbeddingAdapter,
 )
@@ -22,38 +22,38 @@ Evitar encharcamiento para reducir riesgo de lancha.
 """
 
 
-class InMemoryKnowledgeRepository(KnowledgeDocumentRepositoryPort):
+class RepositorioConocimientoEnMemoria(PuertoRepositorioDocumentoConocimiento):
     def __init__(self) -> None:
-        self.documents: list[KnowledgeDocument] = []
-        self.contents: dict[str, str] = {}
+        self.documentos: list[DocumentoConocimiento] = []
+        self.contenidos: dict[str, str] = {}
 
-    def exists_by_hash(self, content_hash: ContentHash) -> bool:
-        return any(document.content_hash == content_hash for document in self.documents)
+    def existe_por_hash(self, hash_contenido: HashContenido) -> bool:
+        return any(documento.hash_contenido == hash_contenido for documento in self.documentos)
 
-    def save(self, document: KnowledgeDocument, content: str) -> None:
-        self.documents.append(document)
-        self.contents[document.id] = content
+    def guardar(self, documento: DocumentoConocimiento, contenido: str) -> None:
+        self.documentos.append(documento)
+        self.contenidos[documento.id] = contenido
 
-    def list_all(self) -> list[KnowledgeDocument]:
-        return list(self.documents)
+    def listar_todos(self) -> list[DocumentoConocimiento]:
+        return list(self.documentos)
 
-    def find_by_id(self, document_id: str) -> KnowledgeDocument | None:
-        for document in self.documents:
-            if document.id == document_id:
-                return document
+    def buscar_por_id(self, documento_id: str) -> DocumentoConocimiento | None:
+        for documento in self.documentos:
+            if documento.id == documento_id:
+                return documento
         return None
 
-    def read_content(self, document: KnowledgeDocument) -> str:
-        return self.contents[document.id]
+    def leer_contenido(self, documento: DocumentoConocimiento) -> str:
+        return self.contenidos[documento.id]
 
-    def update_chunk_count(self, document_id: str, chunk_count: int) -> None:
-        for document in self.documents:
-            if document.id == document_id:
-                document.chunk_count = chunk_count
+    def actualizar_cantidad_fragmentos(self, documento_id: str, cantidad_fragmentos: int) -> None:
+        for documento in self.documentos:
+            if documento.id == documento_id:
+                documento.cantidad_fragmentos = cantidad_fragmentos
                 return
 
 
-class InMemoryVectorStore(VectorStorePort):
+class AlmacenVectoresEnMemoria(VectorStorePort):
     def __init__(self) -> None:
         self.records: dict[str, VectorRecord] = {}
 
@@ -81,58 +81,58 @@ def _cosine(left: list[float], right: list[float]) -> float:
     return sum(a * b for a, b in zip(left, right, strict=True))
 
 
-def _document(content: str = CONTENT) -> KnowledgeDocument:
-    return KnowledgeDocument(
-        document_id=str(uuid4()),
-        title="Riego de papa",
-        source_path="knowledge/demo.md",
-        topic="papa",
-        content_hash=ContentHash.from_content(content),
-        chunk_count=0,
-        ingested_at=datetime.now(timezone.utc).replace(tzinfo=None),
+def _documento(content: str = CONTENT) -> DocumentoConocimiento:
+    return DocumentoConocimiento(
+        documento_id=str(uuid4()),
+        titulo="Riego de papa",
+        ruta_origen="knowledge/demo.md",
+        tema="papa",
+        hash_contenido=HashContenido.desde_contenido(content),
+        cantidad_fragmentos=0,
+        incorporado_en=datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
 
 def test_index_knowledge_upserts_chunks_with_deterministic_ids() -> None:
-    repository = InMemoryKnowledgeRepository()
-    store = InMemoryVectorStore()
-    document = _document()
-    repository.save(document, CONTENT)
-    use_case = IndexKnowledge(
-        knowledge_repository=repository,
+    repository = RepositorioConocimientoEnMemoria()
+    store = AlmacenVectoresEnMemoria()
+    document = _documento()
+    repository.guardar(document, CONTENT)
+    use_case = IndexarConocimiento(
+        repositorio_conocimiento=repository,
         embedding_port=LocalLexicalEmbeddingAdapter(dimension=32),
-        vector_store=store,
-        chunker=DocumentChunker(max_chars=80),
+        almacen_vectores=store,
+        fragmentador=FragmentadorDocumentos(max_chars=80),
     )
 
-    result = use_case.execute()
+    result = use_case.ejecutar()
 
-    assert result.indexed_documents == 1
-    assert result.total_chunks == len(store.records)
-    assert result.total_chunks >= 1
-    assert document.chunk_count == result.total_chunks
+    assert result.documentos_indexados == 1
+    assert result.total_fragmentos == len(store.records)
+    assert result.total_fragmentos >= 1
+    assert document.cantidad_fragmentos == result.total_fragmentos
     assert all(":chunk:" in chunk_id for chunk_id in store.records)
 
 
 def test_index_knowledge_duplicate_document_does_not_duplicate_chunks() -> None:
-    repository = InMemoryKnowledgeRepository()
-    store = InMemoryVectorStore()
-    document = _document()
-    repository.save(document, CONTENT)
-    use_case = IndexKnowledge(
-        knowledge_repository=repository,
+    repository = RepositorioConocimientoEnMemoria()
+    store = AlmacenVectoresEnMemoria()
+    document = _documento()
+    repository.guardar(document, CONTENT)
+    use_case = IndexarConocimiento(
+        repositorio_conocimiento=repository,
         embedding_port=LocalLexicalEmbeddingAdapter(dimension=32),
-        vector_store=store,
-        chunker=DocumentChunker(max_chars=80),
+        almacen_vectores=store,
+        fragmentador=FragmentadorDocumentos(max_chars=80),
     )
 
-    first = use_case.execute()
+    first = use_case.ejecutar()
     ids_after_first = set(store.records)
-    second = use_case.execute()
+    second = use_case.ejecutar()
 
-    assert first.total_chunks == second.total_chunks
+    assert first.total_fragmentos == second.total_fragmentos
     assert set(store.records) == ids_after_first
-    assert len(store.records) == first.total_chunks
+    assert len(store.records) == first.total_fragmentos
 
 
 def test_index_knowledge_uses_embedding_port_not_sdk() -> None:
@@ -141,7 +141,7 @@ def test_index_knowledge_uses_embedding_port_not_sdk() -> None:
         / "app"
         / "application"
         / "useCases"
-        / "index_knowledge.py"
+        / "indexar_conocimiento.py"
     ).read_text(encoding="utf-8")
     lowered = source.lower()
     assert "embeddingport" in lowered
@@ -165,16 +165,16 @@ def test_index_knowledge_does_not_depend_on_concrete_embedding_adapter() -> None
             self.calls += 1
             return LocalLexicalEmbeddingAdapter(dimension=16).embed_texts(texts)
 
-    repository = InMemoryKnowledgeRepository()
-    store = InMemoryVectorStore()
-    repository.save(_document(), CONTENT)
+    repository = RepositorioConocimientoEnMemoria()
+    store = AlmacenVectoresEnMemoria()
+    repository.guardar(_documento(), CONTENT)
     embedding = CountingEmbedding()
-    use_case = IndexKnowledge(
-        knowledge_repository=repository,
+    use_case = IndexarConocimiento(
+        repositorio_conocimiento=repository,
         embedding_port=embedding,
-        vector_store=store,
-        chunker=DocumentChunker(max_chars=120),
+        almacen_vectores=store,
+        fragmentador=FragmentadorDocumentos(max_chars=120),
     )
-    result = use_case.execute()
+    result = use_case.ejecutar()
     assert embedding.calls == 1
-    assert result.total_chunks == len(store.records)
+    assert result.total_fragmentos == len(store.records)

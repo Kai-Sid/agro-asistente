@@ -1,121 +1,122 @@
 from pathlib import Path
 
-from app.application.useCases.register_farmer import RegisterFarmer
-from app.domain.entities.farmer import Farmer
-from app.domain.exceptions import (
-    DuplicateEmailError,
-    InvalidEmailError,
-    InvalidFarmerDataError,
-    InvalidPasswordError,
-)
-from app.domain.ports.input.register_farmer_port import RegisterFarmerCommand
-from app.domain.ports.output.farmer_repository_port import FarmerRepositoryPort
-from app.domain.ports.output.password_hasher_port import PasswordHasherPort
-from app.domain.valueObjects.email import Email
 import pytest
 
+from app.application.useCases.registrar_agricultor import RegistrarAgricultor
+from app.domain.entities.agricultor import Agricultor
+from app.domain.exceptions import (
+    ErrorContrasenaInvalida,
+    ErrorCorreoDuplicado,
+    ErrorCorreoInvalido,
+    ErrorDatosAgricultorInvalidos,
+)
+from app.domain.ports.input.registrar_agricultor_port import ComandoRegistrarAgricultor
+from app.domain.ports.output.hasher_contrasena_port import PuertoHasherContrasena
+from app.domain.ports.output.repositorio_agricultor_port import PuertoRepositorioAgricultor
+from app.domain.valueObjects.email import Email
 
-class InMemoryFarmerRepository(FarmerRepositoryPort):
+
+class RepositorioAgricultorEnMemoria(PuertoRepositorioAgricultor):
     def __init__(self) -> None:
-        self.farmers: list[Farmer] = []
+        self.agricultores: list[Agricultor] = []
 
-    def exists_by_email(self, email: Email) -> bool:
-        return any(farmer.email == email for farmer in self.farmers)
+    def existe_por_correo(self, email: Email) -> bool:
+        return any(agricultor.email == email for agricultor in self.agricultores)
 
-    def find_by_email(self, email: Email) -> Farmer | None:
-        for farmer in self.farmers:
-            if farmer.email == email:
-                return farmer
+    def buscar_por_correo(self, email: Email) -> Agricultor | None:
+        for agricultor in self.agricultores:
+            if agricultor.email == email:
+                return agricultor
         return None
 
-    def save(self, farmer: Farmer) -> None:
-        self.farmers.append(farmer)
+    def guardar(self, agricultor: Agricultor) -> None:
+        self.agricultores.append(agricultor)
 
 
-class FakePasswordHasher(PasswordHasherPort):
-    def hash_password(self, password: str) -> str:
-        return f"$fake${password}"
+class HasherContrasenaFalso(PuertoHasherContrasena):
+    def hashear_contrasena(self, contrasena: str) -> str:
+        return f"$fake${contrasena}"
 
-    def verify_password(self, password: str, password_hash: str) -> bool:
-        return password_hash == f"$fake${password}"
+    def verificar_contrasena(self, contrasena: str, hash_contrasena: str) -> bool:
+        return hash_contrasena == f"$fake${contrasena}"
 
 
-def _use_case() -> tuple[RegisterFarmer, InMemoryFarmerRepository]:
-    repository = InMemoryFarmerRepository()
-    return RegisterFarmer(repository, FakePasswordHasher()), repository
+def _caso_de_uso() -> tuple[RegistrarAgricultor, RepositorioAgricultorEnMemoria]:
+    repositorio = RepositorioAgricultorEnMemoria()
+    return RegistrarAgricultor(repositorio, HasherContrasenaFalso()), repositorio
 
 
 def test_register_farmer_success() -> None:
-    use_case, repository = _use_case()
+    use_case, repository = _caso_de_uso()
 
-    result = use_case.execute(
-        RegisterFarmerCommand(
-            names="Juan",
-            last_names="Pérez",
+    result = use_case.ejecutar(
+        ComandoRegistrarAgricultor(
+            nombres="Juan",
+            apellidos="Pérez",
             email="juan@example.com",
-            password="Password123!",
+            contrasena="Password123!",
         )
     )
 
-    assert result.names == "Juan"
-    assert result.last_names == "Pérez"
+    assert result.nombres == "Juan"
+    assert result.apellidos == "Pérez"
     assert result.email == "juan@example.com"
     assert result.id
-    assert len(repository.farmers) == 1
-    stored = repository.farmers[0]
-    assert stored.password_hash.value == "$fake$Password123!"
-    assert stored.password_hash.value != "Password123!"
+    assert len(repository.agricultores) == 1
+    stored = repository.agricultores[0]
+    assert stored.hash_contrasena.value == "$fake$Password123!"
+    assert stored.hash_contrasena.value != "Password123!"
 
 
 def test_register_farmer_duplicate_email() -> None:
-    use_case, _repository = _use_case()
-    command = RegisterFarmerCommand(
-        names="Juan",
-        last_names="Pérez",
+    use_case, _repository = _caso_de_uso()
+    command = ComandoRegistrarAgricultor(
+        nombres="Juan",
+        apellidos="Pérez",
         email="juan@example.com",
-        password="Password123!",
+        contrasena="Password123!",
     )
-    use_case.execute(command)
+    use_case.ejecutar(command)
 
-    with pytest.raises(DuplicateEmailError, match="ya está registrado"):
-        use_case.execute(command)
+    with pytest.raises(ErrorCorreoDuplicado, match="ya está registrado"):
+        use_case.ejecutar(command)
 
 
 def test_register_farmer_invalid_email() -> None:
-    use_case, _repository = _use_case()
-    with pytest.raises(InvalidEmailError):
-        use_case.execute(
-            RegisterFarmerCommand(
-                names="Juan",
-                last_names="Pérez",
+    use_case, _repository = _caso_de_uso()
+    with pytest.raises(ErrorCorreoInvalido):
+        use_case.ejecutar(
+            ComandoRegistrarAgricultor(
+                nombres="Juan",
+                apellidos="Pérez",
                 email="correo-invalido",
-                password="Password123!",
+                contrasena="Password123!",
             )
         )
 
 
 def test_register_farmer_short_password() -> None:
-    use_case, _repository = _use_case()
-    with pytest.raises(InvalidPasswordError, match="8 caracteres"):
-        use_case.execute(
-            RegisterFarmerCommand(
-                names="Juan",
-                last_names="Pérez",
+    use_case, _repository = _caso_de_uso()
+    with pytest.raises(ErrorContrasenaInvalida, match="8 caracteres"):
+        use_case.ejecutar(
+            ComandoRegistrarAgricultor(
+                nombres="Juan",
+                apellidos="Pérez",
                 email="juan@example.com",
-                password="123",
+                contrasena="123",
             )
         )
 
 
 def test_register_farmer_requires_names() -> None:
-    use_case, _repository = _use_case()
-    with pytest.raises(InvalidFarmerDataError, match="nombres"):
-        use_case.execute(
-            RegisterFarmerCommand(
-                names="  ",
-                last_names="Pérez",
+    use_case, _repository = _caso_de_uso()
+    with pytest.raises(ErrorDatosAgricultorInvalidos, match="nombres"):
+        use_case.ejecutar(
+            ComandoRegistrarAgricultor(
+                nombres="  ",
+                apellidos="Pérez",
                 email="juan@example.com",
-                password="Password123!",
+                contrasena="Password123!",
             )
         )
 
@@ -126,13 +127,13 @@ def test_use_case_file_depends_on_ports_not_adapters() -> None:
         / "app"
         / "application"
         / "useCases"
-        / "register_farmer.py"
+        / "registrar_agricultor.py"
     ).read_text(encoding="utf-8")
     lowered = source.lower()
-    assert "farmerrepositoryport" in lowered
-    assert "passwordhasherport" in lowered
-    assert "mysqlfarmerrepository" not in lowered
-    assert "bcryptpasswordhasher" not in lowered
+    assert "puertorepositorioagricultor" in lowered
+    assert "puertohashercontrasena" in lowered
+    assert "repositorioagricultormysql" not in lowered
+    assert "hashercontrasenabcrypt" not in lowered
     assert "fastapi" not in lowered
     assert "sqlalchemy" not in lowered
     assert "pydantic" not in lowered
