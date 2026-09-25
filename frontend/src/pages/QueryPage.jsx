@@ -48,8 +48,16 @@ export default function QueryPage() {
           setError(typeof detail === "string" ? detail : "Debes seleccionar un contexto agrícola antes de consultar.");
         } else if (status === 400 || status === 422) {
           setError("Revisa el texto de la consulta. No puede estar vacío ni ser demasiado largo.");
+        } else if (status === 503) {
+          setError(
+            typeof detail === "string"
+              ? detail
+              : "El servicio de generación (Ollama) no está disponible. Comprueba que Ollama esté en ejecución."
+          );
         } else {
-          setError("No se pudo enviar la consulta.");
+          setError(
+            typeof detail === "string" ? detail : "No se pudo enviar la consulta."
+          );
         }
       })
       .finally(() => setLoading(false));

@@ -6,6 +6,9 @@ from app.application.useCases.indexar_conocimiento import IndexarConocimiento
 from app.application.useCases.iniciar_sesion_agricultor import IniciarSesionAgricultor
 from app.application.useCases.listar_contextos_agricolas import ListarContextosAgricolas
 from app.application.useCases.listar_documentos_conocimiento import ListarDocumentosConocimiento
+from app.application.useCases.obtener_observaciones_meteorologicas import (
+    ObtenerObservacionesMeteorologicas,
+)
 from app.application.useCases.registrar_agricultor import RegistrarAgricultor
 from app.application.useCases.registrar_consulta import RegistrarConsulta
 from app.application.useCases.seleccionar_contexto_agricola import SeleccionarContextoAgricola
@@ -20,6 +23,9 @@ from app.domain.ports.input.incorporar_conocimiento_port import (
 )
 from app.domain.ports.input.indexar_conocimiento_port import PuertoIndexarConocimiento
 from app.domain.ports.input.iniciar_sesion_agricultor_port import PuertoIniciarSesionAgricultor
+from app.domain.ports.input.obtener_observaciones_meteorologicas_port import (
+    PuertoObtenerObservacionesMeteorologicas,
+)
 from app.domain.ports.input.registrar_agricultor_port import PuertoRegistrarAgricultor
 from app.domain.ports.input.registrar_consulta_port import PuertoRegistrarConsulta
 from app.domain.ports.output.embedding_port import EmbeddingPort
@@ -126,6 +132,9 @@ class CompositionRoot:
                 coleccion=self.settings.senamhi_wis2_collection,
                 timeout_seconds=self.settings.senamhi_wis2_timeout_seconds,
             )
+        )
+        self.puerto_obtener_observaciones_meteorologicas: PuertoObtenerObservacionesMeteorologicas = (
+            ObtenerObservacionesMeteorologicas(self.puerto_observaciones_meteorologicas)
         )
         self.puerto_repositorio_consulta: PuertoRepositorioConsulta = RepositorioConsultaMysql(
             session_factory
