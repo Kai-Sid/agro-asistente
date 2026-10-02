@@ -94,8 +94,10 @@ def test_ollama_adapter_returns_model_text_with_method_ollama() -> None:
     assert url.endswith("/api/generate")
     assert payload["model"] == MODELO_CONFIGURADO
     assert payload["stream"] is False
+    assert payload["options"]["temperature"] == 0.2
     assert "Junín" in str(payload["system"])
     assert "papa" in str(payload["prompt"])
+    assert "floración" in str(payload["prompt"])
 
 
 def test_ollama_connection_error_is_controlled() -> None:
@@ -136,6 +138,30 @@ def test_ollama_http_error_is_controlled() -> None:
 def test_ollama_empty_response_is_controlled() -> None:
     cliente = _ClienteFalso(_RespuestaFalsa(200, {"response": "  "}))
     with pytest.raises(ErrorGeneracionTexto, match="vacío"):
+        _adaptador(cliente).generar("¿Cómo riego?", "papa", "Huancayo")
+
+
+def test_ollama_invalid_json_is_controlled() -> None:
+    class _RespuestaSinJson:
+        status_code = 200
+
+        def json(self) -> dict[str, object]:
+            raise ValueError("Expecting value")
+
+    cliente = _ClienteFalso(_RespuestaSinJson())  # type: ignore[arg-type]
+    with pytest.raises(ErrorGeneracionTexto, match="formato inválido"):
+        _adaptador(cliente).generar("¿Cómo riego?", "papa", "Huancayo")
+
+
+def test_ollama_non_object_json_is_controlled() -> None:
+    class _RespuestaLista:
+        status_code = 200
+
+        def json(self) -> list[str]:
+            return ["texto"]
+
+    cliente = _ClienteFalso(_RespuestaLista())  # type: ignore[arg-type]
+    with pytest.raises(ErrorGeneracionTexto, match="formato inválido"):
         _adaptador(cliente).generar("¿Cómo riego?", "papa", "Huancayo")
 
 
@@ -199,10 +225,19 @@ def test_real_http_call_without_ollama_is_controlled_error() -> None:
         adapter.generar("¿Cómo riego?", "papa", "Huancayo")
 
 
+def _integracion_ollama_habilitada() -> bool:
+    valor = (
+        __import__("os").environ.get("RUN_OLLAMA_INTEGRATION_TESTS")
+        or __import__("os").environ.get("OLLAMA_INTEGRATION")
+        or ""
+    ).strip().lower()
+    return valor in {"1", "true", "yes"}
+
+
 @pytest.mark.integration
 @pytest.mark.skipif(
-    __import__("os").environ.get("OLLAMA_INTEGRATION") != "1",
-    reason="Requiere Ollama en ejecución. Use OLLAMA_MODEL del entorno; no se inventa un resultado de Qwen.",
+    not _integracion_ollama_habilitada(),
+    reason="Requiere Ollama en ejecución. Active RUN_OLLAMA_INTEGRATION_TESTS=true; no se inventa un resultado de Qwen.",
 )
 def test_ollama_real_generate_requires_local_server() -> None:
     settings = Settings(_env_file=None)

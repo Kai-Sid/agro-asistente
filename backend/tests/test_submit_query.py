@@ -12,6 +12,7 @@ from app.domain.entities.evidencia import Evidencia
 from app.domain.entities.respuesta import Respuesta
 from app.domain.exceptions import (
     ErrorContextoSeleccionadoNoEncontrado,
+    ErrorGeneracionTexto,
     ErrorTextoConsultaInvalido,
 )
 from app.domain.ports.input.registrar_consulta_port import ComandoRegistrarConsulta
@@ -296,3 +297,42 @@ def test_submit_query_without_relevant_results_does_not_invent_evidence() -> Non
     assert result.evidencias == ()
     assert evidence_repo.evidencias == []
     assert result.respuesta == f"FAKE:papa:Huancayo:{QUESTION}"
+
+
+class GeneracionTextoNoDisponible(PuertoGeneracionTexto):
+    def generar(
+        self,
+        texto_consulta: str,
+        cultivo: str,
+        region: str,
+        pasajes: list[PasajeRecuperado] | None = None,
+    ) -> RespuestaGenerada:
+        raise ErrorGeneracionTexto(
+            "No se pudo generar la respuesta: el servicio de generación local no está disponible."
+        )
+
+
+def test_submit_query_generation_error_does_not_persist() -> None:
+    use_case, repository, _generation, rag, evidence_repo = _caso_de_uso(
+        generacion=GeneracionTextoNoDisponible(),
+        rag=RecuperacionRagFalsa(
+            [
+                FragmentoRecuperado(
+                    documento_id="doc-1",
+                    titulo_documento="Heladas",
+                    fragmento_id="abc:chunk:0000",
+                    extracto="Cubrir plantones jóvenes antes de madrugadas frías.",
+                    puntaje_similitud=0.7,
+                )
+            ]
+        ),
+    )
+    repository.contextos_seleccionados[FARMER_A] = _contexto(FARMER_A)
+
+    with pytest.raises(ErrorGeneracionTexto, match="no está disponible"):
+        use_case.ejecutar(ComandoRegistrarConsulta(agricultor_id=FARMER_A, texto=QUESTION))
+
+    assert rag.consultas == [QUESTION]
+    assert repository.consultas == []
+    assert repository.respuestas == []
+    assert evidence_repo.evidencias == []

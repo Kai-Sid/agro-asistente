@@ -9,11 +9,14 @@ from app.domain.ports.output.text_generation_port import (
 
 INSTRUCCION_SISTEMA = (
     "Eres un asistente técnico agrícola para la agricultura familiar de Junín, Perú. "
-    "Responde siempre en español, con lenguaje claro y práctico. "
-    "Usa únicamente la información de los fragmentos recuperados de la base de conocimiento. "
-    "No inventes dosis, productos, fechas ni recomendaciones que no estén respaldadas "
-    "por esos fragmentos. Si la información es insuficiente, dilo de forma explícita "
-    "y no completes el vacío con conocimiento general."
+    "Responde siempre en español, con lenguaje claro y práctico para un agricultor. "
+    "Basa la respuesta en los fragmentos recuperados de la base de conocimiento y en el "
+    "cultivo y región indicados. No trates la consulta como independiente de esa evidencia. "
+    "No inventes dosis, productos, fechas, cantidades ni recomendaciones técnicas que no "
+    "estén respaldadas por esos fragmentos. Si la evidencia no permite responder con "
+    "seguridad, dilo de forma explícita y no completes el vacío con conocimiento general. "
+    "No presentes la respuesta como una recomendación oficial. "
+    "No menciones detalles internos del sistema."
 )
 
 
@@ -46,6 +49,10 @@ def construir_prompt_agricola(
             titulo = (pasaje.titulo or "").strip() or "documento agrícola"
             lineas.append(f"{indice}. {titulo}: {pasaje.extracto.strip()}")
     lineas.append("")
+    lineas.append(
+        "Responde solo con lo que dicen esos fragmentos. "
+        "No agregues cifras, materiales ni productos que no estén escritos ahí."
+    )
     lineas.append("Redacta la respuesta técnica en español.")
     return "\n".join(lineas)
 
@@ -118,9 +125,9 @@ class AdaptadorGeneracionOllama(PuertoGeneracionTexto):
 
 def _texto_desde_respuesta(respuesta_http: object, modelo: str) -> str:
     status_code = int(getattr(respuesta_http, "status_code", 0) or 0)
-    cuerpo = _json_seguro(respuesta_http)
+    cuerpo, json_valido = _json_intento(respuesta_http)
     error_remoto = ""
-    if isinstance(cuerpo, dict):
+    if json_valido and isinstance(cuerpo, dict):
         error_remoto = str(cuerpo.get("error") or "").strip()
 
     if status_code == 404 or _es_modelo_ausente(error_remoto, status_code):
@@ -133,10 +140,12 @@ def _texto_desde_respuesta(respuesta_http: object, modelo: str) -> str:
         raise ErrorGeneracionTexto(
             f"No se pudo generar la respuesta: {detalle}."
         )
+    if not json_valido or not isinstance(cuerpo, dict):
+        raise ErrorGeneracionTexto(
+            "No se pudo generar la respuesta: el servicio devolvió un formato inválido."
+        )
 
-    texto = ""
-    if isinstance(cuerpo, dict):
-        texto = str(cuerpo.get("response") or "").strip()
+    texto = str(cuerpo.get("response") or "").strip()
     if not texto:
         raise ErrorGeneracionTexto(
             "No se pudo generar la respuesta: el modelo devolvió un texto vacío."
@@ -144,14 +153,14 @@ def _texto_desde_respuesta(respuesta_http: object, modelo: str) -> str:
     return texto
 
 
-def _json_seguro(respuesta_http: object) -> object:
+def _json_intento(respuesta_http: object) -> tuple[object, bool]:
     lector = getattr(respuesta_http, "json", None)
     if not callable(lector):
-        return {}
+        return {}, False
     try:
-        return lector()
-    except ValueError:
-        return {}
+        return lector(), True
+    except (ValueError, TypeError):
+        return {}, False
 
 
 def _es_modelo_ausente(error_remoto: str, status_code: int) -> bool:

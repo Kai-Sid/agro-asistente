@@ -1,16 +1,18 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.domain.exceptions import (
     ErrorContextoNoEncontrado,
     ErrorDatosContextoInvalidos,
     ErrorDominio,
-    ErrorTokenInvalido,
 )
 from app.domain.ports.input.gestionar_contexto_port import (
     ComandoCrearContextoAgricola,
     ComandoSeleccionarContextoAgricola,
     ResultadoContextoAgricola,
+)
+from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
+    dependencia_agricultor_autenticado,
 )
 from app.infrastructure.composition import CompositionRoot
 
@@ -48,29 +50,7 @@ def _context_response(resultado: ResultadoContextoAgricola) -> AgriculturalConte
 
 def create_context_router(container: CompositionRoot) -> APIRouter:
     router = APIRouter(prefix="/api/v1/contexts", tags=["contexts"])
-
-    def current_farmer_id(
-        authorization: str | None = Header(default=None),
-    ) -> str:
-        if not authorization or not authorization.lower().startswith("bearer "):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="No autenticado",
-            )
-        token = authorization.split(" ", 1)[1].strip()
-        if not token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="No autenticado",
-            )
-        try:
-            identity = container.puerto_verificador_token.verificar(token)
-        except ErrorTokenInvalido as error:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=str(error),
-            ) from error
-        return identity.agricultor_id
+    current_farmer_id = dependencia_agricultor_autenticado(container)
 
     @router.post(
         "",

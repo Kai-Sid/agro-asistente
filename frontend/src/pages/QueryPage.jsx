@@ -29,6 +29,9 @@ export default function QueryPage() {
 
   function handleSubmit(event) {
     event.preventDefault();
+    if (loading) {
+      return;
+    }
     setLoading(true);
     setError("");
     setResult(null);
@@ -49,11 +52,11 @@ export default function QueryPage() {
         } else if (status === 400 || status === 422) {
           setError("Revisa el texto de la consulta. No puede estar vacío ni ser demasiado largo.");
         } else if (status === 503) {
-          setError(
-            typeof detail === "string"
-              ? detail
-              : "El servicio de generación (Ollama) no está disponible. Comprueba que Ollama esté en ejecución."
-          );
+        setError(
+          typeof detail === "string"
+            ? detail
+            : "El servicio de generación (Ollama) no está disponible. Comprueba que Ollama esté en ejecución."
+        );
         } else {
           setError(
             typeof detail === "string" ? detail : "No se pudo enviar la consulta."
@@ -101,6 +104,7 @@ export default function QueryPage() {
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 required
+                disabled={loading}
                 maxLength={2000}
                 placeholder="¿Qué puedo hacer para mejorar el cultivo de papa?"
               />

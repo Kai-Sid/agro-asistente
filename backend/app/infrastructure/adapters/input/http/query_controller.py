@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.domain.exceptions import (
@@ -6,10 +6,12 @@ from app.domain.exceptions import (
     ErrorDominio,
     ErrorGeneracionTexto,
     ErrorTextoConsultaInvalido,
-    ErrorTokenInvalido,
 )
 from app.domain.ports.input.registrar_consulta_port import ComandoRegistrarConsulta
 from app.domain.valueObjects.texto_consulta import TextoConsulta
+from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
+    dependencia_agricultor_autenticado,
+)
 from app.infrastructure.composition import CompositionRoot
 
 
@@ -45,29 +47,7 @@ class SubmitQueryResponse(BaseModel):
 
 def create_query_router(container: CompositionRoot) -> APIRouter:
     router = APIRouter(prefix="/api/v1/queries", tags=["queries"])
-
-    def current_farmer_id(
-        authorization: str | None = Header(default=None),
-    ) -> str:
-        if not authorization or not authorization.lower().startswith("bearer "):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="No autenticado",
-            )
-        token = authorization.split(" ", 1)[1].strip()
-        if not token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="No autenticado",
-            )
-        try:
-            identity = container.puerto_verificador_token.verificar(token)
-        except ErrorTokenInvalido as error:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=str(error),
-            ) from error
-        return identity.agricultor_id
+    current_farmer_id = dependencia_agricultor_autenticado(container)
 
     @router.post(
         "",

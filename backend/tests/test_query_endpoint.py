@@ -5,6 +5,13 @@ import jwt
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
+from app.application.useCases.registrar_consulta import RegistrarConsulta
+from app.domain.exceptions import ErrorGeneracionTexto
+from app.domain.ports.output.text_generation_port import (
+    PasajeRecuperado,
+    PuertoGeneracionTexto,
+    RespuestaGenerada,
+)
 from app.infrastructure.adapters.output.mysql.connection import create_mysql_engine
 from app.main import app, container
 
@@ -210,3 +217,39 @@ def test_submit_query_persists_query_and_response() -> None:
     assert response_row is not None
     assert response_row[0] == body["answer"]
     assert response_row[1] == "template"
+
+
+class _GeneracionNoDisponible(PuertoGeneracionTexto):
+    def generar(
+        self,
+        texto_consulta: str,
+        cultivo: str,
+        region: str,
+        pasajes: list[PasajeRecuperado] | None = None,
+    ) -> RespuestaGenerada:
+        raise ErrorGeneracionTexto(
+            "No se pudo generar la respuesta: el servicio de generación local no está disponible. "
+            "Comprueba que Ollama esté en ejecución."
+        )
+
+
+def test_submit_query_returns_503_when_generation_unavailable() -> None:
+    original = container.puerto_registrar_consulta
+    container.puerto_registrar_consulta = RegistrarConsulta(
+        repositorio_consulta=container.puerto_repositorio_consulta,
+        generacion_texto=_GeneracionNoDisponible(),
+        recuperacion_rag=container.servicio_recuperacion_rag,
+        repositorio_evidencia=container.puerto_repositorio_evidencia,
+    )
+    try:
+        user = _register_and_login()
+        _create_and_select_context(user["token"])
+        response = client.post(
+            QUERIES_URL,
+            json={"text": QUESTION},
+            headers=_auth(user["token"]),
+        )
+        assert response.status_code == 503
+        assert "no está disponible" in response.json()["detail"].lower()
+    finally:
+        container.puerto_registrar_consulta = original
