@@ -132,3 +132,22 @@ def test_chromadb_stays_inside_chroma_adapter() -> None:
         violations.append(str(python_file.relative_to(backend_root)))
 
     assert violations == []
+
+
+def test_joblib_stays_inside_model_adapters() -> None:
+    backend_root = Path(__file__).resolve().parents[1]
+    permitidas = {
+        backend_root / "app" / "infrastructure" / "adapters" / "output" / "clasificacion",
+        backend_root / "app" / "infrastructure" / "adapters" / "output" / "riesgo",
+    }
+    violations: list[str] = []
+
+    for python_file in (backend_root / "app").rglob("*.py"):
+        content = python_file.read_text(encoding="utf-8")
+        if "import joblib" not in content and "from joblib" not in content:
+            continue
+        if any(carpeta in python_file.parents or python_file.parent == carpeta for carpeta in permitidas):
+            continue
+        violations.append(str(python_file.relative_to(backend_root)))
+
+    assert violations == []

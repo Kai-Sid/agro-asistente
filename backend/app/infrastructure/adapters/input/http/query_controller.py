@@ -35,6 +35,20 @@ class QueryEvidenceResponse(BaseModel):
     rank_order: int
 
 
+class QueryClassificationResponse(BaseModel):
+    category: str | None
+    abstained: bool
+    reason: str | None
+    margin: float | None
+    top_class: str | None
+    top_score: float | None
+    second_class: str | None
+    second_score: float | None
+    scores_are_calibrated: bool
+    available: bool
+    error: str | None
+
+
 class SubmitQueryResponse(BaseModel):
     id: str
     text: str
@@ -43,6 +57,7 @@ class SubmitQueryResponse(BaseModel):
     created_at: str
     context: QueryContextResponse
     evidences: list[QueryEvidenceResponse]
+    classification: QueryClassificationResponse
 
 
 def create_query_router(container: CompositionRoot) -> APIRouter:
@@ -104,6 +119,38 @@ def create_query_router(container: CompositionRoot) -> APIRouter:
                 )
                 for item in result.evidencias
             ],
+            classification=_clasificacion_http(result),
         )
 
     return router
+
+
+def _clasificacion_http(result) -> QueryClassificationResponse:
+    clasificacion = result.clasificacion
+    if clasificacion is None:
+        return QueryClassificationResponse(
+            category=None,
+            abstained=False,
+            reason=None,
+            margin=None,
+            top_class=None,
+            top_score=None,
+            second_class=None,
+            second_score=None,
+            scores_are_calibrated=False,
+            available=False,
+            error=result.error_clasificacion,
+        )
+    return QueryClassificationResponse(
+        category=clasificacion.categoria,
+        abstained=clasificacion.abstencion,
+        reason=clasificacion.motivo_abstencion,
+        margin=clasificacion.margen,
+        top_class=clasificacion.clase_primera,
+        top_score=clasificacion.puntuacion_primera,
+        second_class=clasificacion.clase_segunda,
+        second_score=clasificacion.puntuacion_segunda,
+        scores_are_calibrated=clasificacion.puntuaciones_calibradas,
+        available=True,
+        error=None,
+    )

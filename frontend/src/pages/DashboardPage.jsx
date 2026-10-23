@@ -31,6 +31,12 @@ export default function DashboardPage() {
               <p>Accede a la base de conocimiento disponible.</p>
             </Link>
           </li>
+          <li>
+            <Link to="/riesgo">
+              <strong>Riesgo experimental</strong>
+              <p>Prototipo académico con datos sintéticos. No es una evaluación agronómica validada.</p>
+            </Link>
+          </li>
         </ul>
 
         <AuthFooter showDashboardLink={false} />

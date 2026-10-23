@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from app.domain.ports.input.clasificar_consulta_port import ResultadoClasificacionConsulta
+
 
 @dataclass(frozen=True)
 class ComandoRegistrarConsulta:
@@ -35,6 +37,8 @@ class ResultadoRegistrarConsulta:
     creado_en: str
     contexto: ResultadoContextoConsulta
     evidencias: tuple[ResultadoEvidenciaConsulta, ...]
+    clasificacion: ResultadoClasificacionConsulta | None = None
+    error_clasificacion: str | None = None
 
 
 class PuertoRegistrarConsulta(ABC):

@@ -138,6 +138,16 @@ export default function QueryPage() {
                     ? "Plantilla (pruebas / fallback explícito)"
                     : result.generation_method}
                 </dd>
+                <dt>Categoría</dt>
+                <dd>
+                  {result.classification?.available
+                    ? result.classification.category
+                    : "No disponible"}
+                  {result.classification?.abstained ? " (abstención experimental)" : ""}
+                  {result.classification && !result.classification.available && result.classification.error
+                    ? ` — ${result.classification.error}`
+                    : ""}
+                </dd>
                 <dt>Fecha</dt>
                 <dd>{result.created_at}</dd>
               </dl>

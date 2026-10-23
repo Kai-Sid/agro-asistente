@@ -121,6 +121,7 @@ def _rewire_isolated_chroma(tmp_path: Path) -> tuple[object, object, object]:
         generacion_texto=container.puerto_generacion_texto,
         recuperacion_rag=retrieval,
         repositorio_evidencia=container.puerto_repositorio_evidencia,
+        clasificar_consulta=container.puerto_clasificar_consulta,
     )
     container.puerto_indexar_conocimiento = IndexarConocimiento(
         repositorio_conocimiento=container.puerto_repositorio_documento_conocimiento,

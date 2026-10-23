@@ -68,3 +68,15 @@ class ErrorGeneracionTexto(ErrorDominio):
 
 class ErrorObservacionesMeteorologicas(ErrorDominio):
     """No se pudieron obtener observaciones meteorológicas. El dominio no conoce el proveedor."""
+
+
+class ErrorClasificadorNoDisponible(ErrorDominio):
+    """El clasificador experimental no pudo cargarse o devolvió una salida inválida."""
+
+
+class ErrorEscenarioRiesgoInvalido(ErrorDominio):
+    """El escenario de riesgo no cumple el formato del prototipo HU-08."""
+
+
+class ErrorPredictorRiesgoNoDisponible(ErrorDominio):
+    """El modelo de riesgo HU-08 no pudo cargarse o devolvió una categoría inválida."""

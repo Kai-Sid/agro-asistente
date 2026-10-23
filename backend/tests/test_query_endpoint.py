@@ -240,6 +240,7 @@ def test_submit_query_returns_503_when_generation_unavailable() -> None:
         generacion_texto=_GeneracionNoDisponible(),
         recuperacion_rag=container.servicio_recuperacion_rag,
         repositorio_evidencia=container.puerto_repositorio_evidencia,
+        clasificar_consulta=container.puerto_clasificar_consulta,
     )
     try:
         user = _register_and_login()

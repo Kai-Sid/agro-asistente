@@ -1,5 +1,6 @@
 from app.application.services.fragmentador_documentos import FragmentadorDocumentos
 from app.application.services.servicio_recuperacion_rag import ServicioRecuperacionRag
+from app.application.useCases.clasificar_consulta import ClasificarConsulta
 from app.application.useCases.crear_contexto_agricola import CrearContextoAgricola
 from app.application.useCases.incorporar_conocimiento import IncorporarConocimiento
 from app.application.useCases.indexar_conocimiento import IndexarConocimiento
@@ -9,9 +10,11 @@ from app.application.useCases.listar_documentos_conocimiento import ListarDocume
 from app.application.useCases.obtener_observaciones_meteorologicas import (
     ObtenerObservacionesMeteorologicas,
 )
+from app.application.useCases.predecir_riesgo import PredecirRiesgoAgricola
 from app.application.useCases.registrar_agricultor import RegistrarAgricultor
 from app.application.useCases.registrar_consulta import RegistrarConsulta
 from app.application.useCases.seleccionar_contexto_agricola import SeleccionarContextoAgricola
+from app.domain.ports.input.clasificar_consulta_port import PuertoClasificarConsulta
 from app.domain.ports.input.gestionar_contexto_port import (
     PuertoCrearContextoAgricola,
     PuertoListarContextosAgricolas,
@@ -26,6 +29,7 @@ from app.domain.ports.input.iniciar_sesion_agricultor_port import PuertoIniciarS
 from app.domain.ports.input.obtener_observaciones_meteorologicas_port import (
     PuertoObtenerObservacionesMeteorologicas,
 )
+from app.domain.ports.input.predecir_riesgo_port import PuertoPredecirRiesgo
 from app.domain.ports.input.registrar_agricultor_port import PuertoRegistrarAgricultor
 from app.domain.ports.input.registrar_consulta_port import PuertoRegistrarConsulta
 from app.domain.ports.output.embedding_port import EmbeddingPort
@@ -39,6 +43,7 @@ from app.domain.ports.output.repositorio_documento_conocimiento_port import (
     PuertoRepositorioDocumentoConocimiento,
 )
 from app.domain.ports.output.repositorio_evidencia_port import PuertoRepositorioEvidencia
+from app.domain.ports.output.puerto_clasificador_consultas import PuertoClasificadorConsultas
 from app.domain.ports.output.puerto_observaciones_meteorologicas import (
     PuertoObservacionesMeteorologicas,
 )
@@ -48,6 +53,10 @@ from app.domain.ports.output.token_verifier_port import PuertoVerificadorToken
 from app.domain.ports.output.vector_store_port import VectorStorePort
 from app.infrastructure.adapters.output.chroma.chroma_vector_store_adapter import (
     ChromaVectorStoreAdapter,
+)
+from app.infrastructure.adapters.output.clasificacion.adaptador_clasificador_tfidf import (
+    AdaptadorClasificadorTfidf,
+    resolver_ruta_modelo,
 )
 from app.infrastructure.adapters.output.embedding.external_embedding_adapter import (
     ExternalEmbeddingAdapter,
@@ -73,6 +82,10 @@ from app.infrastructure.adapters.output.mysql.repositorio_documento_conocimiento
     RepositorioDocumentoConocimientoMysql,
 )
 from app.infrastructure.adapters.output.mysql.repositorio_evidencia import RepositorioEvidenciaMysql
+from app.infrastructure.adapters.output.riesgo.adaptador_predictor_riesgo import (
+    AdaptadorPredictorRiesgo,
+    resolver_ruta_modelo_riesgo,
+)
 from app.infrastructure.adapters.output.security.emisor_token_jwt import EmisorTokenJwt
 from app.infrastructure.adapters.output.security.hasher_contrasena_bcrypt import (
     HasherContrasenaBcrypt,
@@ -152,11 +165,22 @@ class CompositionRoot:
             top_k=self.settings.rag_top_k,
             similitud_minima=self.settings.rag_min_similarity,
         )
+        self.puerto_clasificador_consultas: PuertoClasificadorConsultas = AdaptadorClasificadorTfidf(
+            ruta_modelo=resolver_ruta_modelo(self.settings.clasificador_modelo_ruta)
+        )
+        self.puerto_predecir_riesgo: PuertoPredecirRiesgo = PredecirRiesgoAgricola(
+            AdaptadorPredictorRiesgo(resolver_ruta_modelo_riesgo())
+        )
+        self.puerto_clasificar_consulta: PuertoClasificarConsulta = ClasificarConsulta(
+            puerto_clasificador=self.puerto_clasificador_consultas,
+            margen_minimo=self.settings.clasificador_margen_minimo,
+        )
         self.puerto_registrar_consulta: PuertoRegistrarConsulta = RegistrarConsulta(
             repositorio_consulta=self.puerto_repositorio_consulta,
             generacion_texto=self.puerto_generacion_texto,
             recuperacion_rag=self.servicio_recuperacion_rag,
             repositorio_evidencia=self.puerto_repositorio_evidencia,
+            clasificar_consulta=self.puerto_clasificar_consulta,
         )
         self.puerto_repositorio_documento_conocimiento: PuertoRepositorioDocumentoConocimiento = (
             RepositorioDocumentoConocimientoMysql(

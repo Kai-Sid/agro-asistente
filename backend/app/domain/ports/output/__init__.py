@@ -1,4 +1,8 @@
 from app.domain.ports.output.embedding_port import EmbeddingPort
+from app.domain.ports.output.puerto_clasificador_consultas import (
+    PuertoClasificadorConsultas,
+    PuntuacionModelo,
+)
 from app.domain.ports.output.puerto_observaciones_meteorologicas import (
     FiltroObservacionesMeteorologicas,
     PuertoObservacionesMeteorologicas,
@@ -21,6 +25,8 @@ from app.domain.ports.output.vector_store_port import VectorStorePort
 __all__ = [
     "EmbeddingPort",
     "FiltroObservacionesMeteorologicas",
+    "PuntuacionModelo",
+    "PuertoClasificadorConsultas",
     "PuertoObservacionesMeteorologicas",
     "PuertoEmisorToken",
     "PuertoGeneracionTexto",

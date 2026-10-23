@@ -1,6 +1,7 @@
 from functools import lru_cache
 from urllib.parse import quote_plus
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -51,6 +52,20 @@ class Settings(BaseSettings):
     senamhi_wis2_timeout_seconds: int = 20
 
     cors_origins: str = "http://localhost:5173"
+
+    # Clasificador experimental HU-07. 0.17 es el margen fijado en la validación de v2.
+    clasificador_margen_minimo: float = 0.17
+    clasificador_modelo_ruta: str = ""
+
+    @field_validator("clasificador_margen_minimo")
+    @classmethod
+    def validar_margen_clasificador(cls, value: float) -> float:
+        if value < 0 or value > 1:
+            raise ValueError(
+                "CLASIFICADOR_MARGEN_MINIMO debe estar entre 0 y 1. "
+                "El valor predeterminado es 0.17 y no se sustituye en silencio."
+            )
+        return value
 
     @property
     def cors_origin_list(self) -> list[str]:

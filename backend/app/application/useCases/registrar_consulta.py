@@ -5,7 +5,15 @@ from app.application.services.servicio_recuperacion_rag import (
 from app.domain.entities.consulta import Consulta
 from app.domain.entities.evidencia import Evidencia
 from app.domain.entities.respuesta import Respuesta
-from app.domain.exceptions import ErrorContextoSeleccionadoNoEncontrado
+from app.domain.exceptions import (
+    ErrorClasificadorNoDisponible,
+    ErrorContextoSeleccionadoNoEncontrado,
+)
+from app.domain.ports.input.clasificar_consulta_port import (
+    ComandoClasificarConsulta,
+    PuertoClasificarConsulta,
+    ResultadoClasificacionConsulta,
+)
 from app.domain.ports.input.registrar_consulta_port import (
     ComandoRegistrarConsulta,
     PuertoRegistrarConsulta,
@@ -26,11 +34,13 @@ class RegistrarConsulta(PuertoRegistrarConsulta):
         generacion_texto: PuertoGeneracionTexto,
         recuperacion_rag: ServicioRecuperacionRag,
         repositorio_evidencia: PuertoRepositorioEvidencia,
+        clasificar_consulta: PuertoClasificarConsulta,
     ) -> None:
         self._repositorio_consulta = repositorio_consulta
         self._generacion_texto = generacion_texto
         self._recuperacion_rag = recuperacion_rag
         self._repositorio_evidencia = repositorio_evidencia
+        self._clasificar_consulta = clasificar_consulta
 
     def ejecutar(self, comando: ComandoRegistrarConsulta) -> ResultadoRegistrarConsulta:
         texto_consulta = TextoConsulta(comando.texto)
@@ -45,6 +55,7 @@ class RegistrarConsulta(PuertoRegistrarConsulta):
             contexto_id=contexto.id,
             texto=texto_consulta,
         )
+        clasificacion, error_clasificacion = self._clasificar_una_vez(consulta.texto.value)
         fragmentos = self._recuperacion_rag.recuperar(consulta.texto.value)
         generada = self._generacion_texto.generar(
             texto_consulta=consulta.texto.value,
@@ -77,7 +88,17 @@ class RegistrarConsulta(PuertoRegistrarConsulta):
                 nombre_predio=contexto.nombre_predio,
             ),
             evidencias=tuple(_resultado_evidencia(item) for item in evidencias),
+            clasificacion=clasificacion,
+            error_clasificacion=error_clasificacion,
         )
+
+    def _clasificar_una_vez(
+        self, texto: str
+    ) -> tuple[ResultadoClasificacionConsulta | None, str | None]:
+        try:
+            return self._clasificar_consulta.ejecutar(ComandoClasificarConsulta(texto=texto)), None
+        except ErrorClasificadorNoDisponible as error:
+            return None, str(error)
 
 
 def _pasajes_desde_fragmentos(fragmentos: list[FragmentoRecuperado]) -> list[PasajeRecuperado]:

@@ -15,3 +15,6 @@ pytest>=8.3.0
 # 0.3.9 no importa con langchain-community 0.4 (falta chat_models.vertexai).
 # 0.4.3 es la versión compatible con Python 3.13 y el langchain que RAGAS instala.
 ragas==0.4.3
+# Clasificador experimental HU-07 (TF-IDF + regresión logística). No entra al flujo RAG.
+scikit-learn>=1.6.0
+joblib>=1.4.0

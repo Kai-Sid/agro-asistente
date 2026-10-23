@@ -15,6 +15,10 @@ from app.domain.exceptions import (
     ErrorGeneracionTexto,
     ErrorTextoConsultaInvalido,
 )
+from app.domain.ports.input.clasificar_consulta_port import (
+    PuertoClasificarConsulta,
+    ResultadoClasificacionConsulta,
+)
 from app.domain.ports.input.registrar_consulta_port import ComandoRegistrarConsulta
 from app.domain.ports.output.repositorio_consulta_port import PuertoRepositorioConsulta
 from app.domain.ports.output.repositorio_evidencia_port import PuertoRepositorioEvidencia
@@ -107,6 +111,21 @@ def _contexto(
     )
 
 
+class ClasificadorFijo(PuertoClasificarConsulta):
+    def ejecutar(self, comando) -> ResultadoClasificacionConsulta:
+        return ResultadoClasificacionConsulta(
+            categoria="siembra_manejo_cultivo",
+            abstencion=False,
+            motivo_abstencion=None,
+            clase_primera="siembra_manejo_cultivo",
+            puntuacion_primera=0.8,
+            clase_segunda="riego",
+            puntuacion_segunda=0.1,
+            margen=0.7,
+            puntuaciones_calibradas=False,
+        )
+
+
 def _caso_de_uso(
     repositorio: RepositorioConsultaEnMemoria | None = None,
     generacion: PuertoGeneracionTexto | None = None,
@@ -123,7 +142,19 @@ def _caso_de_uso(
     generator = generacion or GeneracionTextoFalsa()
     retrieval = rag or RecuperacionRagFalsa()
     evidencias = repositorio_evidencia or RepositorioEvidenciaEnMemoria()
-    return RegistrarConsulta(repo, generator, retrieval, evidencias), repo, generator, retrieval, evidencias
+    return (
+        RegistrarConsulta(
+            repo,
+            generator,
+            retrieval,
+            evidencias,
+            clasificar_consulta=ClasificadorFijo(),
+        ),
+        repo,
+        generator,
+        retrieval,
+        evidencias,
+    )
 
 
 def test_submit_query_success() -> None:

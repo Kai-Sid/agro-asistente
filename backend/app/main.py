@@ -2,10 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.infrastructure.adapters.input.http.auth_controller import create_auth_router
+from app.infrastructure.adapters.input.http.clasificacion_controller import (
+    create_clasificacion_router,
+)
 from app.infrastructure.adapters.input.http.context_controller import create_context_router
 from app.infrastructure.adapters.input.http.health_controller import create_health_router
 from app.infrastructure.adapters.input.http.knowledge_controller import create_knowledge_router
 from app.infrastructure.adapters.input.http.query_controller import create_query_router
+from app.infrastructure.adapters.input.http.riesgo_controller import create_riesgo_router
 from app.infrastructure.adapters.input.http.weather_controller import create_weather_router
 from app.infrastructure.composition import build_container
 
@@ -31,3 +35,5 @@ app.include_router(create_context_router(container))
 app.include_router(create_query_router(container))
 app.include_router(create_knowledge_router(container))
 app.include_router(create_weather_router(container))
+app.include_router(create_clasificacion_router(container))
+app.include_router(create_riesgo_router(container))

@@ -22,6 +22,8 @@ def test_settings_load_defaults_without_secrets_in_code() -> None:
         == "urn:wmo:md:pe-senamhi:synop-hourly"
     )
     assert Settings.model_fields["senamhi_wis2_timeout_seconds"].default == 20
+    assert Settings.model_fields["clasificador_margen_minimo"].default == 0.17
+    assert Settings.model_fields["clasificador_modelo_ruta"].default == ""
     assert settings.embedding_api_key == ""
     assert "sk-" not in settings.embedding_api_key
     assert "localhost:5173" in settings.cors_origin_list[0]

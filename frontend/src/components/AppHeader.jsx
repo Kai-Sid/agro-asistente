@@ -44,6 +44,9 @@ export default function AppHeader() {
           <NavLink to="/knowledge" onClick={closeMenu}>
             Base de conocimiento
           </NavLink>
+          <NavLink to="/riesgo" onClick={closeMenu}>
+            Riesgo experimental
+          </NavLink>
           <button type="button" className="logout-button logout-button-header" onClick={handleLogout}>
             Cerrar sesión
           </button>

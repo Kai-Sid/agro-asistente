@@ -106,6 +106,10 @@ export function submitAgriculturalQuery(payload) {
   return api.post("/api/v1/queries", payload, { timeout: 120000 });
 }
 
+export function predictAgriculturalRisk(payload) {
+  return api.post("/api/v1/riesgo", payload, { timeout: 120000 });
+}
+
 export function listKnowledgeDocuments() {
   return api.get("/api/v1/knowledge/documents");
 }
