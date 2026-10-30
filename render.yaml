@@ -6,6 +6,7 @@ services:
   - type: web
     name: agro-asistente-api
     runtime: python
+    plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: python -m app.main
@@ -36,7 +37,7 @@ services:
       - key: CLASIFICADOR_MARGEN_MINIMO
         value: "0.17"
       - key: MYSQL_PORT
-        value: "3306"
+        value: "4000"
       - key: MYSQL_DATABASE
         value: agro_asistente
       - key: SENAMHI_WIS2_BASE_URL
