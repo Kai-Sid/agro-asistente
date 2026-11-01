@@ -80,7 +80,7 @@ api.interceptors.response.use(
 );
 
 export function getHealth() {
-  return api.get("/health");
+  return api.get("/health", { timeout: 60000 });
 }
 
 export function registerFarmer(payload) {

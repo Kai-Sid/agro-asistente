@@ -30,6 +30,15 @@ def test_settings_load_defaults_without_secrets_in_code() -> None:
     assert "*" not in settings.cors_origin_list
 
 
+def test_cors_acepta_el_origen_de_pages_sin_barra_final() -> None:
+    settings = Settings(
+        _env_file=None,
+        cors_origins=" https://agro-asistente.pages.dev/ ",
+    )
+
+    assert settings.cors_origin_list == ["https://agro-asistente.pages.dev"]
+
+
 def test_cors_rechaza_comodines_y_conserva_el_origen_local() -> None:
     abierto = Settings(_env_file=None, cors_origins="*")
     assert abierto.cors_origin_list == ["http://localhost:5173"]

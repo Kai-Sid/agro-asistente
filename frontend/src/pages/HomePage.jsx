@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { urlBaseApi } from "../api/baseUrl.js";
 import { getHealth } from "../api/client";
+import { destinoHealth, mensajeErrorConexion } from "../api/conexion.js";
 import PublicShell from "../components/PublicShell.jsx";
 
 export default function HomePage() {
@@ -15,10 +16,9 @@ export default function HomePage() {
         setHealth(response.data);
         setError("");
       })
-      .catch(() => {
-        const base = urlBaseApi(import.meta.env);
-        const destino = base ? `${base}/health` : "/health";
-        setError(`No se pudo conectar con el backend en ${destino}`);
+      .catch((error) => {
+        const destino = destinoHealth(urlBaseApi(import.meta.env));
+        setError(mensajeErrorConexion(error, destino));
       })
       .finally(() => setLoading(false));
   }, []);

@@ -69,11 +69,12 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        origins = [
-            origin.strip()
-            for origin in self.cors_origins.split(",")
-            if origin.strip() and "*" not in origin.strip()
-        ]
+        origins: list[str] = []
+        for origin in self.cors_origins.split(","):
+            limpio = origin.strip().rstrip("/")
+            if not limpio or "*" in limpio:
+                continue
+            origins.append(limpio)
         if not origins:
             return ["http://localhost:5173"]
         return origins
