@@ -1,7 +1,8 @@
 import os
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+
+from app.infrastructure.config.cors import registrar_cors
 
 from app.infrastructure.adapters.input.http.auth_controller import create_auth_router
 from app.infrastructure.adapters.input.http.clasificacion_controller import (
@@ -23,13 +24,7 @@ app = FastAPI(
     description="PMV1 - Sistema de asistencia técnica agrícola basado en IA",
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=container.settings.cors_origin_list,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+registrar_cors(app, container.settings)
 
 app.include_router(create_health_router(container))
 app.include_router(create_auth_router(container))
