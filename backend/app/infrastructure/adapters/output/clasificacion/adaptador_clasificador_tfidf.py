@@ -79,6 +79,19 @@ class AdaptadorClasificadorTfidf(PuertoClasificadorConsultas):
                 "joblib no está disponible para cargar el clasificador."
             ) from exc
         try:
+            from app.infrastructure.config.settings import get_settings
+            from app.infrastructure.model_integrity import verificar_integridad_modelo
+
+            settings = get_settings()
+            verificar_integridad_modelo(
+                self._ruta_modelo,
+                enforce=bool(settings.model_integrity_check and settings.es_produccion),
+            )
+        except ValueError as exc:
+            raise ErrorClasificadorNoDisponible(
+                "Integridad del modelo del clasificador no verificada."
+            ) from exc
+        try:
             modelo = joblib.load(self._ruta_modelo)
         except Exception as exc:
             raise ErrorClasificadorNoDisponible(

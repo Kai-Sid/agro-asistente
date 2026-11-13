@@ -22,9 +22,11 @@ class RegistrarAgricultor(PuertoRegistrarAgricultor):
         self,
         repositorio_agricultor: PuertoRepositorioAgricultor,
         hasher_contrasena: PuertoHasherContrasena,
+        password_policy: str = "basic",
     ) -> None:
         self._repositorio_agricultor = repositorio_agricultor
         self._hasher_contrasena = hasher_contrasena
+        self._password_policy = (password_policy or "basic").strip().lower()
 
     def ejecutar(self, comando: ComandoRegistrarAgricultor) -> ResultadoRegistrarAgricultor:
         nombres = (comando.nombres or "").strip()
@@ -39,6 +41,15 @@ class RegistrarAgricultor(PuertoRegistrarAgricultor):
             raise ErrorContrasenaInvalida("La contraseña es obligatoria")
         if len(contrasena) < LONGITUD_MINIMA_CONTRASENA:
             raise ErrorContrasenaInvalida("La contraseña debe tener al menos 8 caracteres")
+        if self._password_policy == "strong":
+            if not any(c.isupper() for c in contrasena):
+                raise ErrorContrasenaInvalida(
+                    "La contraseña debe incluir al menos una letra mayúscula"
+                )
+            if not any(c.isdigit() for c in contrasena):
+                raise ErrorContrasenaInvalida(
+                    "La contraseña debe incluir al menos un dígito"
+                )
 
         email = Email(comando.email)
         if self._repositorio_agricultor.existe_por_correo(email):

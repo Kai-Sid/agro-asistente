@@ -103,6 +103,7 @@ export default function RegisterPage() {
               minLength={8}
               autoComplete="new-password"
             />
+            <span className="hint">Mínimo 8 caracteres. Si el servidor usa política strong, incluye mayúscula y dígito.</span>
           </label>
           <button type="submit" disabled={loading || Boolean(success)}>
             {loading ? "Registrando…" : "Registrarme"}

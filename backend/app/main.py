@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI
 
 from app.infrastructure.config.cors import registrar_cors
+from app.infrastructure.security_logging import configurar_logging_seguridad
 
 from app.infrastructure.adapters.input.http.auth_controller import create_auth_router
 from app.infrastructure.adapters.input.http.clasificacion_controller import (
@@ -16,12 +17,20 @@ from app.infrastructure.adapters.input.http.riesgo_controller import create_ries
 from app.infrastructure.adapters.input.http.weather_controller import create_weather_router
 from app.infrastructure.composition import build_container
 
+configurar_logging_seguridad()
 container = build_container()
+_settings = container.settings
+_docs = "/docs" if _settings.openapi_habilitado else None
+_redoc = "/redoc" if _settings.openapi_habilitado else None
+_openapi = "/openapi.json" if _settings.openapi_habilitado else None
 
 app = FastAPI(
     title=container.settings.app_name,
     version="0.1.0",
     description="PMV1 - Sistema de asistencia técnica agrícola basado en IA",
+    docs_url=_docs,
+    redoc_url=_redoc,
+    openapi_url=_openapi,
 )
 
 registrar_cors(app, container.settings)

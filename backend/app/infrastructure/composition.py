@@ -121,12 +121,14 @@ class CompositionRoot:
         self.puerto_registrar_agricultor: PuertoRegistrarAgricultor = RegistrarAgricultor(
             repositorio_agricultor=self.puerto_repositorio_agricultor,
             hasher_contrasena=self.puerto_hasher_contrasena,
+            password_policy=self.settings.password_policy,
         )
         self.puerto_iniciar_sesion_agricultor: PuertoIniciarSesionAgricultor = (
             IniciarSesionAgricultor(
                 repositorio_agricultor=self.puerto_repositorio_agricultor,
                 hasher_contrasena=self.puerto_hasher_contrasena,
                 emisor_token=self.puerto_emisor_token,
+                curator_emails=self.settings.curator_email_set,
             )
         )
         self.puerto_crear_contexto_agricola: PuertoCrearContextoAgricola = CrearContextoAgricola(

@@ -297,6 +297,12 @@ dd {
   font-weight: 600;
 }
 
+.form label .hint {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
 .form input,
 .form textarea,
 .form select {

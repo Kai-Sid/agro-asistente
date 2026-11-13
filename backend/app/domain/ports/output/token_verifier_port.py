@@ -5,6 +5,8 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class IdentidadAutenticada:
     agricultor_id: str
+    rol: str = "farmer"
+    email: str = ""
 
 
 class PuertoVerificadorToken(ABC):

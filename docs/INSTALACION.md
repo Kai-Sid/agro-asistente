@@ -26,6 +26,8 @@ copy .env.example .env
 
 Editar `.env` con las credenciales locales de MySQL. **Nunca** colocar API keys en el código fuente.
 
+Seguridad (OWASP): define `JWT_SECRET` con al menos 32 caracteres (`openssl rand -hex 32`). En `APP_ENV=production` el API no arranca con el secreto por defecto. Opciones útiles: `PASSWORD_POLICY`, `KNOWLEDGE_MUTATION_POLICY`, `RATE_LIMIT_ENABLED`, `WEATHER_REQUIRE_AUTH` (ver `backend/.env.example`).
+
 Levantar el API:
 
 ```powershell

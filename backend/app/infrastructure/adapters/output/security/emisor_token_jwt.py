@@ -16,6 +16,7 @@ class EmisorTokenJwt(PuertoEmisorToken):
         payload = {
             "sub": sujeto,
             "email": claims.get("email", ""),
+            "role": claims.get("role", claims.get("rol", "farmer")),
             "exp": ahora + timedelta(minutes=self._expire_minutes),
         }
         return jwt.encode(payload, self._secret, algorithm=self._algorithm)

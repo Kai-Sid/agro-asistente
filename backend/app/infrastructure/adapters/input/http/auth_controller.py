@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from app.domain.exceptions import (
@@ -12,6 +12,8 @@ from app.domain.exceptions import (
 from app.domain.ports.input.iniciar_sesion_agricultor_port import ComandoIniciarSesionAgricultor
 from app.domain.ports.input.registrar_agricultor_port import ComandoRegistrarAgricultor
 from app.infrastructure.composition import CompositionRoot
+from app.infrastructure.rate_limit import limitador_global
+from app.infrastructure.security_logging import log_seguridad
 
 
 class RegisterFarmerRequest(BaseModel):
@@ -38,12 +40,47 @@ class AuthenticatedFarmerResponse(BaseModel):
     names: str
     last_names: str
     email: str
+    role: str = "farmer"
 
 
 class LoginFarmerResponse(BaseModel):
     access_token: str
     token_type: str
     farmer: AuthenticatedFarmerResponse
+
+
+def _cliente_ip(request: Request) -> str:
+    reenviada = request.headers.get("x-forwarded-for", "")
+    if reenviada:
+        return reenviada.split(",")[0].strip() or "unknown"
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def _aplicar_rate_limit(
+    container: CompositionRoot,
+    *,
+    accion: str,
+    clave: str,
+    maximo: int,
+    ventana: int,
+) -> None:
+    if not container.settings.rate_limit_enabled:
+        return
+    if limitador_global.permitir(f"{accion}:{clave}", maximo, ventana):
+        return
+    log_seguridad(
+        "rate_limited",
+        habilitado=container.settings.security_log_enabled,
+        action=accion,
+        key=clave,
+    )
+    raise HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail="Demasiadas solicitudes. Inténtalo más tarde.",
+        headers={"Retry-After": str(ventana)},
+    )
 
 
 def create_auth_router(container: CompositionRoot) -> APIRouter:
@@ -54,7 +91,15 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
         status_code=status.HTTP_201_CREATED,
         response_model=RegisterFarmerResponse,
     )
-    def register(payload: RegisterFarmerRequest) -> RegisterFarmerResponse:
+    def register(payload: RegisterFarmerRequest, request: Request) -> RegisterFarmerResponse:
+        ip = _cliente_ip(request)
+        _aplicar_rate_limit(
+            container,
+            accion="register",
+            clave=ip,
+            maximo=container.settings.rate_limit_register_max,
+            ventana=container.settings.rate_limit_register_window_seconds,
+        )
         command = ComandoRegistrarAgricultor(
             nombres=payload.names,
             apellidos=payload.last_names,
@@ -64,6 +109,12 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
         try:
             result = container.puerto_registrar_agricultor.ejecutar(command)
         except ErrorCorreoDuplicado as error:
+            log_seguridad(
+                "register_conflict",
+                habilitado=container.settings.security_log_enabled,
+                email=payload.email,
+                ip=ip,
+            )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(error),
@@ -79,6 +130,13 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
                 detail=str(error),
             ) from error
 
+        log_seguridad(
+            "register_ok",
+            habilitado=container.settings.security_log_enabled,
+            farmer_id=result.id,
+            email=result.email,
+            ip=ip,
+        )
         return RegisterFarmerResponse(
             id=result.id,
             names=result.nombres,
@@ -91,7 +149,16 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
         status_code=status.HTTP_200_OK,
         response_model=LoginFarmerResponse,
     )
-    def login(payload: LoginFarmerRequest) -> LoginFarmerResponse:
+    def login(payload: LoginFarmerRequest, request: Request) -> LoginFarmerResponse:
+        ip = _cliente_ip(request)
+        email_clave = (payload.email or "").strip().lower() or "unknown"
+        _aplicar_rate_limit(
+            container,
+            accion="login",
+            clave=f"{ip}:{email_clave}",
+            maximo=container.settings.rate_limit_login_max,
+            ventana=container.settings.rate_limit_login_window_seconds,
+        )
         command = ComandoIniciarSesionAgricultor(
             email=payload.email,
             contrasena=payload.password,
@@ -99,6 +166,12 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
         try:
             result = container.puerto_iniciar_sesion_agricultor.ejecutar(command)
         except ErrorCredencialesInvalidas as error:
+            log_seguridad(
+                "login_fail",
+                habilitado=container.settings.security_log_enabled,
+                email=payload.email,
+                ip=ip,
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=str(error),
@@ -114,6 +187,14 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
                 detail=str(error),
             ) from error
 
+        log_seguridad(
+            "login_ok",
+            habilitado=container.settings.security_log_enabled,
+            farmer_id=result.agricultor.id,
+            email=result.agricultor.email,
+            role=result.agricultor.rol,
+            ip=ip,
+        )
         return LoginFarmerResponse(
             access_token=result.access_token,
             token_type=result.token_type,
@@ -122,6 +203,7 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
                 names=result.agricultor.nombres,
                 last_names=result.agricultor.apellidos,
                 email=result.agricultor.email,
+                role=result.agricultor.rol,
             ),
         )
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from app.application.services.referencia_origen import resolver_referencia_documento
@@ -14,6 +14,8 @@ from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
     dependencia_agricultor_autenticado,
 )
 from app.infrastructure.composition import CompositionRoot
+from app.infrastructure.rate_limit import limitador_global
+from app.infrastructure.security_logging import log_seguridad
 
 
 class SubmitQueryRequest(BaseModel):
@@ -73,8 +75,32 @@ def create_query_router(container: CompositionRoot) -> APIRouter:
     )
     def submit_query(
         payload: SubmitQueryRequest,
+        request: Request,
         farmer_id: str = Depends(current_farmer_id),
     ) -> SubmitQueryResponse:
+        if container.settings.rate_limit_enabled:
+            permitido = limitador_global.permitir(
+                f"query:{farmer_id}",
+                container.settings.rate_limit_query_max,
+                container.settings.rate_limit_query_window_seconds,
+            )
+            if not permitido:
+                log_seguridad(
+                    "rate_limited",
+                    habilitado=container.settings.security_log_enabled,
+                    action="query",
+                    farmer_id=farmer_id,
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Demasiadas consultas. Inténtalo más tarde.",
+                    headers={
+                        "Retry-After": str(
+                            container.settings.rate_limit_query_window_seconds
+                        )
+                    },
+                )
+        del request
         command = ComandoRegistrarConsulta(agricultor_id=farmer_id, texto=payload.text)
         try:
             result = container.puerto_registrar_consulta.ejecutar(command)

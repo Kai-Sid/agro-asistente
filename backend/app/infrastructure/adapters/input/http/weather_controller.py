@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app.domain.exceptions import ErrorDominio, ErrorObservacionesMeteorologicas
 from app.domain.ports.input.obtener_observaciones_meteorologicas_port import (
     ComandoObtenerObservacionesMeteorologicas,
+)
+from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
+    dependencia_agricultor_autenticado,
 )
 from app.infrastructure.composition import CompositionRoot
 
@@ -22,8 +25,18 @@ class WeatherObservationResponse(BaseModel):
 
 def create_weather_router(container: CompositionRoot) -> APIRouter:
     router = APIRouter(prefix="/api/v1/weather", tags=["weather"])
+    auth_opcional = dependencia_agricultor_autenticado(container)
 
-    @router.get("/observations", response_model=list[WeatherObservationResponse])
+    def _deps_auth():
+        if container.settings.weather_require_auth:
+            return [Depends(auth_opcional)]
+        return []
+
+    @router.get(
+        "/observations",
+        response_model=list[WeatherObservationResponse],
+        dependencies=_deps_auth(),
+    )
     def list_weather_observations(
         limit: int = Query(default=10, ge=1, le=50),
         datetime: str | None = Query(default=None),

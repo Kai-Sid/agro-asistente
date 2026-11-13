@@ -1,15 +1,17 @@
 import jwt
 
-from app.domain.exceptions import InvalidTokenError
-from app.domain.ports.output.token_verifier_port import AuthenticatedIdentity, TokenVerifierPort
+from app.domain.exceptions import ErrorTokenInvalido
+from app.domain.ports.output.token_verifier_port import IdentidadAutenticada, PuertoVerificadorToken
 
 
-class JwtTokenVerifier(TokenVerifierPort):
+class JwtTokenVerifier(PuertoVerificadorToken):
+    """Alias en inglés del verificador JWT (misma semántica que VerificadorTokenJwt)."""
+
     def __init__(self, secret: str, algorithm: str) -> None:
         self._secret = secret
         self._algorithm = algorithm
 
-    def verify(self, token: str) -> AuthenticatedIdentity:
+    def verificar(self, token: str) -> IdentidadAutenticada:
         try:
             payload = jwt.decode(
                 token,
@@ -17,11 +19,19 @@ class JwtTokenVerifier(TokenVerifierPort):
                 algorithms=[self._algorithm],
             )
         except jwt.ExpiredSignatureError as error:
-            raise InvalidTokenError("No autenticado") from error
+            raise ErrorTokenInvalido("No autenticado") from error
         except jwt.InvalidTokenError as error:
-            raise InvalidTokenError("No autenticado") from error
+            raise ErrorTokenInvalido("No autenticado") from error
 
-        farmer_id = payload.get("sub")
-        if not farmer_id:
-            raise InvalidTokenError("No autenticado")
-        return AuthenticatedIdentity(farmer_id=str(farmer_id))
+        agricultor_id = payload.get("sub")
+        if not agricultor_id:
+            raise ErrorTokenInvalido("No autenticado")
+        rol = str(payload.get("role") or payload.get("rol") or "farmer").strip().lower()
+        if rol not in {"farmer", "curator"}:
+            rol = "farmer"
+        email = str(payload.get("email") or "").strip().lower()
+        return IdentidadAutenticada(
+            agricultor_id=str(agricultor_id),
+            rol=rol,
+            email=email,
+        )

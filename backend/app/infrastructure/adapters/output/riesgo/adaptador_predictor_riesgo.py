@@ -91,6 +91,17 @@ class AdaptadorPredictorRiesgo(PuertoPredictorRiesgo):
             raise ErrorPredictorRiesgoNoDisponible(MENSAJE_CARGA) from error
         orden = self._importar_orden()
         try:
+            from app.infrastructure.config.settings import get_settings
+            from app.infrastructure.model_integrity import verificar_integridad_modelo
+
+            settings = get_settings()
+            verificar_integridad_modelo(
+                self._ruta_modelo,
+                enforce=bool(settings.model_integrity_check and settings.es_produccion),
+            )
+        except ValueError as error:
+            raise ErrorPredictorRiesgoNoDisponible(MENSAJE_CARGA) from error
+        try:
             modelo = joblib.load(self._ruta_modelo)
         except Exception as error:
             raise ErrorPredictorRiesgoNoDisponible(MENSAJE_CARGA) from error

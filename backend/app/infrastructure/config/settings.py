@@ -1,13 +1,19 @@
 from functools import lru_cache
+import logging
 from urllib.parse import quote_plus
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ORIGEN_LOCAL = "http://localhost:5173"
 ORIGEN_PAGES = "https://agro-asistente.pages.dev"
 PATRON_DESPLIEGUE_PAGES = "https://*.agro-asistente.pages.dev"
 REGEX_DESPLIEGUE_PAGES = r"^https://[A-Za-z0-9-]+\.agro-asistente\.pages\.dev$"
+JWT_DEFAULT_SECRET = "change-me-in-local-env-do-not-use-in-production"
+HOSTS_SENAMHI_PERMITIDOS = frozenset({"wis.senamhi.gob.pe"})
+HOSTS_OLLAMA_PERMITIDOS = frozenset({"127.0.0.1", "localhost"})
+
+_logger = logging.getLogger("agro.security")
 
 
 class Settings(BaseSettings):
@@ -28,9 +34,11 @@ class Settings(BaseSettings):
     mysql_password: str = ""
     mysql_database: str = "agro_asistente"
 
-    jwt_secret: str = "change-me-in-local-env-do-not-use-in-production"
+    jwt_secret: str = JWT_DEFAULT_SECRET
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 120
+    # None = enforce solo en production. true/false fuerza el comportamiento.
+    jwt_secret_enforce: bool | None = None
 
     knowledge_dir: str = "../knowledge"
 
@@ -58,9 +66,28 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173"
 
-    # Clasificador experimental HU-07. 0.17 es el margen fijado en la validación de v2.
     clasificador_margen_minimo: float = 0.17
     clasificador_modelo_ruta: str = ""
+
+    # --- Controles OWASP (defaults compatibles con PMV1 / demos) ---
+    force_openapi: bool = False
+    health_detailed: bool | None = None
+    rate_limit_enabled: bool = True
+    rate_limit_login_max: int = 10
+    rate_limit_login_window_seconds: int = 300
+    rate_limit_register_max: int = 5
+    rate_limit_register_window_seconds: int = 3600
+    rate_limit_query_max: int = 30
+    rate_limit_query_window_seconds: int = 60
+    password_policy: str = "basic"
+    knowledge_mutation_policy: str = "open"
+    knowledge_curator_emails: str = ""
+    weather_require_auth: bool = False
+    # None = enforce solo en production (compat local/docker).
+    url_allowlist_enforce: bool | None = None
+    prompt_hardening: bool = True
+    model_integrity_check: bool = True
+    security_log_enabled: bool = True
 
     @field_validator("clasificador_margen_minimo")
     @classmethod
@@ -71,6 +98,90 @@ class Settings(BaseSettings):
                 "El valor predeterminado es 0.17 y no se sustituye en silencio."
             )
         return value
+
+    @field_validator("password_policy")
+    @classmethod
+    def validar_password_policy(cls, value: str) -> str:
+        limpio = (value or "basic").strip().lower()
+        if limpio not in {"basic", "strong"}:
+            raise ValueError("PASSWORD_POLICY debe ser 'basic' o 'strong'.")
+        return limpio
+
+    @field_validator("knowledge_mutation_policy")
+    @classmethod
+    def validar_knowledge_policy(cls, value: str) -> str:
+        limpio = (value or "open").strip().lower()
+        if limpio not in {"open", "curators_only"}:
+            raise ValueError(
+                "KNOWLEDGE_MUTATION_POLICY debe ser 'open' o 'curators_only'."
+            )
+        return limpio
+
+    @model_validator(mode="after")
+    def validar_secreto_jwt_y_urls(self) -> "Settings":
+        enforce = self.jwt_secret_enforce
+        if enforce is None:
+            enforce = self.es_produccion
+        secreto = (self.jwt_secret or "").strip()
+        debil = (
+            not secreto
+            or secreto == JWT_DEFAULT_SECRET
+            or len(secreto) < 32
+        )
+        if enforce and debil:
+            raise ValueError(
+                "JWT_SECRET debe definirse con al menos 32 caracteres y no puede "
+                "usar el valor por defecto en producción. "
+                "Genera uno con: openssl rand -hex 32. "
+                "Rollback de emergencia: JWT_SECRET_ENFORCE=false"
+            )
+        if debil and not enforce:
+            _logger.warning(
+                "JWT_SECRET débil o por defecto en APP_ENV=%s. "
+                "No uses este valor fuera de desarrollo local.",
+                self.app_env,
+            )
+        enforce_urls = self.url_allowlist_enforce
+        if enforce_urls is None:
+            enforce_urls = self.es_produccion
+        if enforce_urls:
+            _validar_url_permitida(
+                self.senamhi_wis2_base_url,
+                HOSTS_SENAMHI_PERMITIDOS,
+                "SENAMHI_WIS2_BASE_URL",
+            )
+            _validar_url_permitida(
+                self.ollama_base_url,
+                HOSTS_OLLAMA_PERMITIDOS,
+                "OLLAMA_BASE_URL",
+                esquemas_extra={"http"},
+            )
+        return self
+
+    @property
+    def es_produccion(self) -> bool:
+        return (self.app_env or "").strip().lower() == "production"
+
+    @property
+    def openapi_habilitado(self) -> bool:
+        if self.force_openapi:
+            return True
+        return not self.es_produccion
+
+    @property
+    def health_incluye_detalle(self) -> bool:
+        if self.health_detailed is not None:
+            return self.health_detailed
+        return not self.es_produccion
+
+    @property
+    def curator_email_set(self) -> set[str]:
+        emails: set[str] = set()
+        for parte in (self.knowledge_curator_emails or "").split(","):
+            limpio = parte.strip().lower()
+            if limpio:
+                emails.add(limpio)
+        return emails
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -108,6 +219,30 @@ class Settings(BaseSettings):
         return (
             f"mysql+pymysql://{auth}@{host}:{self.mysql_port}/"
             f"{database}?charset=utf8mb4"
+        )
+
+
+def _validar_url_permitida(
+    url: str,
+    hosts: frozenset[str],
+    nombre: str,
+    esquemas_extra: set[str] | None = None,
+) -> None:
+    from urllib.parse import urlparse
+
+    bruto = (url or "").strip()
+    if not bruto:
+        raise ValueError(f"{nombre} no puede estar vacío.")
+    partes = urlparse(bruto)
+    esquemas = {"https"} | (esquemas_extra or set())
+    if partes.scheme not in esquemas:
+        raise ValueError(f"{nombre} debe usar un esquema permitido: {sorted(esquemas)}")
+    host = (partes.hostname or "").lower()
+    if host not in hosts:
+        raise ValueError(
+            f"{nombre} apunta a un host no permitido ({host or 'sin-host'}). "
+            f"Permitidos: {sorted(hosts)}. "
+            "Rollback: URL_ALLOWLIST_ENFORCE=false"
         )
 
 

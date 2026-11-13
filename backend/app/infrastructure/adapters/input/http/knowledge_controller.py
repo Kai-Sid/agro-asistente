@@ -14,8 +14,10 @@ from app.domain.ports.input.incorporar_conocimiento_port import (
 )
 from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
     dependencia_agricultor_autenticado,
+    dependencia_escritura_conocimiento,
 )
 from app.infrastructure.composition import CompositionRoot
+from app.infrastructure.security_logging import log_seguridad
 
 
 class IngestKnowledgeRequest(BaseModel):
@@ -58,6 +60,7 @@ def _documento_response(resultado: ResultadoDocumentoConocimiento) -> KnowledgeD
 def create_knowledge_router(container: CompositionRoot) -> APIRouter:
     router = APIRouter(prefix="/api/v1/knowledge", tags=["knowledge"])
     require_authenticated_farmer = dependencia_agricultor_autenticado(container)
+    require_knowledge_writer = dependencia_escritura_conocimiento(container)
 
     @router.post(
         "/ingest",
@@ -66,7 +69,7 @@ def create_knowledge_router(container: CompositionRoot) -> APIRouter:
     )
     def ingest_knowledge(
         payload: IngestKnowledgeRequest,
-        _farmer_id: str = Depends(require_authenticated_farmer),
+        farmer_id: str = Depends(require_knowledge_writer),
     ) -> KnowledgeDocumentResponse:
         command = ComandoIncorporarConocimiento(
             titulo=payload.title,
@@ -90,11 +93,17 @@ def create_knowledge_router(container: CompositionRoot) -> APIRouter:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
             ) from error
+        log_seguridad(
+            "knowledge_ingest",
+            habilitado=container.settings.security_log_enabled,
+            farmer_id=farmer_id,
+            document_id=result.id,
+        )
         return _documento_response(result)
 
     @router.post("/index", response_model=IndexKnowledgeResponse)
     def index_knowledge(
-        _farmer_id: str = Depends(require_authenticated_farmer),
+        farmer_id: str = Depends(require_knowledge_writer),
     ) -> IndexKnowledgeResponse:
         try:
             result = container.puerto_indexar_conocimiento.ejecutar()
@@ -108,6 +117,12 @@ def create_knowledge_router(container: CompositionRoot) -> APIRouter:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error),
             ) from error
+        log_seguridad(
+            "knowledge_index",
+            habilitado=container.settings.security_log_enabled,
+            farmer_id=farmer_id,
+            indexed=result.documentos_indexados,
+        )
         return IndexKnowledgeResponse(
             indexed_documents=result.documentos_indexados,
             total_chunks=result.total_fragmentos,

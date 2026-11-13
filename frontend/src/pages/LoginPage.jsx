@@ -47,7 +47,9 @@ export default function LoginPage() {
       .catch((err) => {
         const status = err.response?.status;
         const detail = err.response?.data?.detail;
-        if (status === 401) {
+        if (status === 429) {
+          setError("Demasiados intentos. Espera un momento e inténtalo de nuevo.");
+        } else if (status === 401) {
           setError(typeof detail === "string" ? detail : "Credenciales inválidas");
         } else if (status === 400 || status === 422) {
           setError("Revisa el correo y la contraseña.");

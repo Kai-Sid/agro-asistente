@@ -57,7 +57,13 @@ export default function KnowledgePage() {
         if (status === 401) {
           return;
         }
-        if (status === 409) {
+        if (status === 403) {
+          setError(
+            typeof detail === "string"
+              ? detail
+              : "No tienes permiso de curator para incorporar documentos.",
+          );
+        } else if (status === 409) {
           setError(typeof detail === "string" ? detail : "Ese documento ya está registrado.");
         } else if (status === 400 || status === 422) {
           setError("Revisa título, tema y contenido. No pueden estar vacíos.");

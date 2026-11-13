@@ -7,17 +7,27 @@ export const api = axios.create({
 });
 
 const ACCESS_TOKEN_KEY = "agro_asistente_access_token";
+const SESSION_FARMER_KEY = "agro_asistente_session_farmer";
+const SESSION_ROLE_KEY = "agro_asistente_session_role";
 const PUBLIC_AUTH_PATHS = ["/api/v1/auth/login", "/api/v1/auth/register"];
+
+function authStorage() {
+  const mode = String(import.meta.env.VITE_AUTH_STORAGE || "local").toLowerCase();
+  if (mode === "session" && typeof window !== "undefined" && window.sessionStorage) {
+    return window.sessionStorage;
+  }
+  return window.localStorage;
+}
 
 export function saveAccessToken(token) {
   if (typeof token !== "string" || !token.trim()) {
     return;
   }
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, token.trim());
+  authStorage().setItem(ACCESS_TOKEN_KEY, token.trim());
 }
 
 export function getAccessToken() {
-  const token = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = authStorage().getItem(ACCESS_TOKEN_KEY);
   if (!token || token === "undefined" || token === "null") {
     return null;
   }
@@ -25,29 +35,46 @@ export function getAccessToken() {
 }
 
 export function clearAccessToken() {
+  authStorage().removeItem(ACCESS_TOKEN_KEY);
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  if (window.sessionStorage) {
+    window.sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  }
 }
-
-const SESSION_FARMER_KEY = "agro_asistente_session_farmer";
 
 export function saveSessionFarmer(farmer) {
   const names = typeof farmer?.names === "string" ? farmer.names.trim() : "";
   const lastNames = typeof farmer?.last_names === "string" ? farmer.last_names.trim() : "";
   const email = typeof farmer?.email === "string" ? farmer.email.trim() : "";
+  const role = typeof farmer?.role === "string" ? farmer.role.trim().toLowerCase() : "farmer";
   const displayName = [names, lastNames].filter(Boolean).join(" ") || email;
   if (!displayName) {
     return;
   }
-  window.localStorage.setItem(SESSION_FARMER_KEY, displayName);
+  const storage = authStorage();
+  storage.setItem(SESSION_FARMER_KEY, displayName);
+  storage.setItem(SESSION_ROLE_KEY, role || "farmer");
 }
 
 export function getSessionFarmer() {
-  return window.localStorage.getItem(SESSION_FARMER_KEY);
+  return authStorage().getItem(SESSION_FARMER_KEY);
+}
+
+export function getSessionRole() {
+  return authStorage().getItem(SESSION_ROLE_KEY) || "farmer";
 }
 
 export function clearSession() {
   clearAccessToken();
+  const storage = authStorage();
+  storage.removeItem(SESSION_FARMER_KEY);
+  storage.removeItem(SESSION_ROLE_KEY);
   window.localStorage.removeItem(SESSION_FARMER_KEY);
+  window.localStorage.removeItem(SESSION_ROLE_KEY);
+  if (window.sessionStorage) {
+    window.sessionStorage.removeItem(SESSION_FARMER_KEY);
+    window.sessionStorage.removeItem(SESSION_ROLE_KEY);
+  }
 }
 
 function isPublicAuthRequest(config) {

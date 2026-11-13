@@ -14,6 +14,7 @@ class AgricultorAutenticado:
     nombres: str
     apellidos: str
     email: str
+    rol: str = "farmer"
 
 
 @dataclass(frozen=True)

@@ -9,6 +9,8 @@ def create_health_router(container: CompositionRoot) -> APIRouter:
 
     @router.get("/health")
     def health() -> dict[str, str]:
+        if not container.settings.health_incluye_detalle:
+            return {"status": "ok"}
         mysql_status = "connected" if ping_mysql(container.settings) else "disconnected"
         return {
             "status": "ok",

@@ -19,10 +19,12 @@ class IniciarSesionAgricultor(PuertoIniciarSesionAgricultor):
         repositorio_agricultor: PuertoRepositorioAgricultor,
         hasher_contrasena: PuertoHasherContrasena,
         emisor_token: PuertoEmisorToken,
+        curator_emails: set[str] | frozenset[str] | None = None,
     ) -> None:
         self._repositorio_agricultor = repositorio_agricultor
         self._hasher_contrasena = hasher_contrasena
         self._emisor_token = emisor_token
+        self._curator_emails = {e.lower() for e in (curator_emails or set())}
 
     def ejecutar(
         self, comando: ComandoIniciarSesionAgricultor
@@ -45,9 +47,10 @@ class IniciarSesionAgricultor(PuertoIniciarSesionAgricultor):
         ):
             raise ErrorCredencialesInvalidas(CREDENCIALES_INVALIDAS)
 
+        rol = "curator" if email.value in self._curator_emails else "farmer"
         access_token = self._emisor_token.emitir_token(
             sujeto=agricultor.id,
-            claims={"email": agricultor.email.value},
+            claims={"email": agricultor.email.value, "role": rol},
         )
         return ResultadoIniciarSesionAgricultor(
             access_token=access_token,
@@ -57,5 +60,6 @@ class IniciarSesionAgricultor(PuertoIniciarSesionAgricultor):
                 nombres=agricultor.nombres,
                 apellidos=agricultor.apellidos,
                 email=agricultor.email.value,
+                rol=rol,
             ),
         )

@@ -24,4 +24,12 @@ class VerificadorTokenJwt(PuertoVerificadorToken):
         agricultor_id = payload.get("sub")
         if not agricultor_id:
             raise ErrorTokenInvalido("No autenticado")
-        return IdentidadAutenticada(agricultor_id=str(agricultor_id))
+        rol = str(payload.get("role") or payload.get("rol") or "farmer").strip().lower()
+        if rol not in {"farmer", "curator"}:
+            rol = "farmer"
+        email = str(payload.get("email") or "").strip().lower()
+        return IdentidadAutenticada(
+            agricultor_id=str(agricultor_id),
+            rol=rol,
+            email=email,
+        )
