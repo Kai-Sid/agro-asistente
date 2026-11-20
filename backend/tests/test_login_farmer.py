@@ -82,7 +82,9 @@ def test_login_farmer_success() -> None:
     assert "password" not in result.__dict__
     assert not hasattr(result.agricultor, "hash_contrasena")
     assert hasher.verify_calls == [("Password123!", farmer.hash_contrasena.value)]
-    assert tokens.calls == [(farmer.id, {"email": "juan@example.com"})]
+    assert tokens.calls == [
+        (farmer.id, {"email": "juan@example.com", "role": "farmer"})
+    ]
 
 
 def test_login_unknown_email_returns_generic_error() -> None:
