@@ -108,12 +108,18 @@ Expand-Archive -Path .\backups\knowledge-YYYYMMDD-HHMMSS.zip -DestinationPath . 
 
 | Paso | Resultado esperado | Fecha / operador |
 |---|---|---|
-| Crear carpeta `backups/` | OK | |
-| `mysqldump` genera `.sql` > 0 B | OK / SKIP si MySQL no disponible | |
-| Zip `knowledge/` | OK | |
-| (Opcional) restore en instancia lab | Login + list contexts | |
+| Crear carpeta `backups/` | OK | 2026-11-20 |
+| `mysqldump` genera `.sql` > 0 B | OK — `mysql-agro_asistente-20261120-160045.sql` | 2026-11-20 |
+| Zip `knowledge/` + chroma | OK | 2026-11-20 |
+| Restore lab no destructivo | OK — `restore_ensayo.ps1` → 6 tablas en `agro_asistente_restore_lab` | 2026-11-20 / lab local |
 
-Si MySQL no está disponible en el entorno de auditoría, dejar constancia **SKIP** — no inventar restore exitoso.
+### Script de restore lab (recomendado)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\database\scripts\restore_ensayo.ps1
+```
+
+No toca la BD de trabajo `agro_asistente`. Detalle: `docs/EVIDENCIA_CIERRE_P1.md`.
 
 ---
 

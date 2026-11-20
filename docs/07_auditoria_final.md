@@ -4,7 +4,7 @@
 |---|---|
 | Proyecto | Agro Asistente (`Kai-Sid/agro-asistente`) |
 | Rol | Auditor Principal de Calidad y Seguridad |
-| Fecha | 2026-11-20 |
+| Fecha | 2026-11-20 (actualizado cierre P1) |
 | Entradas | `03_auditoria_implementacion_furps.md`, `06_auditoria_implementacion_owasp.md`, estado del workspace |
 | Rama | `owasp` |
 | Alcance | PMV1 + plan maestro FURPS+/OWASP ejecutado en esta corrida |
@@ -20,7 +20,7 @@ Se ejecutaron las tres fases del plan maestro (`00`): auditoría/mejora FURPS+, 
 | Calidad (FURPS+) | **Cumple parcialmente** (score orientativo ~74/100; plan 02 cerrado con observaciones) |
 | Seguridad (OWASP Top 10) | **Cumple parcialmente** (score **68/100**; A06 ya no “no corregida”) |
 | Funcionalidad | **Se preservó** el PMV1; cambios aditivos (UI index, atomicidad, flags) |
-| Riesgo operativo | **Medio** con checklist de producción; **Alto** con defaults demo públicos |
+| Riesgo operativo | **Medio** con checklist + endurecimiento en código; **Alto** solo si se fuerza bypass lab |
 | **Recomendación final** | **Apto para producción con observaciones** (piloto académico / despliegue controlado) |
 
 “Producción” = piloto controlado, no servicio masivo de asesoría agronómica oficial.
@@ -36,6 +36,7 @@ Fundamento (`03`):
 - Implementadas: M02 runbook, U01 UX, F01 index UI, M08 atomicidad, S01 CI/npm test.
 - Cerrados después: F-HIST (historial UI/API), P01 (baseline `/health` live), backup script + ensayo dump, `/health/ready`.
 - M03: **acreditado** con MySQL (`test_security_owasp.py` **14 passed**).
+- Cierre P1: restore lab acreditado (`restore_ensayo.ps1`), defaults demo bloqueados en `APP_ENV=production`.
 
 Evidencias de prueba registradas:
 
@@ -58,7 +59,7 @@ Evidencias de prueba registradas:
 | Parciales | 9 |
 | Corregida | 1 (A09) |
 
-Condición operativa (go): aplicar `docs/CHECKLIST_PRODUCCION.md` completo.
+Condición operativa (go): aplicar `docs/CHECKLIST_PRODUCCION.md` completo. En production el arranque **falla** si faltan curators / password strong / weather auth / rate limit (ver `settings.py`).
 
 ```env
 APP_ENV=production
@@ -70,9 +71,11 @@ WEATHER_REQUIRE_AUTH=true
 RATE_LIMIT_ENABLED=true
 MODEL_INTEGRITY_CHECK=true
 URL_ALLOWLIST_ENFORCE=true
+AUTH_COOKIE_ENABLED=true
+AUTH_COOKIE_SECURE=true
 ```
 
-Frontend build: `VITE_AUTH_STORAGE=session` (o vacío en PROD).
+Frontend build: `VITE_AUTH_STORAGE=session` y `VITE_AUTH_COOKIE_MODE=true` (Render).
 
 ---
 
@@ -86,36 +89,33 @@ Frontend build: `VITE_AUTH_STORAGE=session` (o vacío en PROD).
 | Regresiones observadas | No evidenciadas en contratos principales |
 | Riesgos de regresión | Activar flags harden sin curadores / password strong / weather auth |
 
-Smoke recomendado (matriz V-REG) — **no ejecutado E2E completo aquí** (API/MySQL/Ollama no levantados):
-
-1. register → login → context → query → knowledge list/index  
-2. Repetir con flags prod en staging  
+Smoke E2E: script + pytest listos (`scripts/smoke_e2e_ollama.py`). Corrida live pendiente si API/Ollama no están arriba; ver `EVIDENCIA_CIERRE_P1.md`.
 
 ---
 
 ## 5. Riesgo operativo
 
-| Escenario | Riesgo |
-|---|---|
-| Piloto aula + checklist | **Medio** |
-| Público con `.env` demo | **Alto** |
-| Decisiones agronómicas críticas / HU-08 como verdad | **Alto** (RAGAS/HU-08 no validados en campo) |
+| Escenario | Riesgo | Estado 2026-11-20 |
+|---|---|---|
+| Piloto aula + checklist + production enforce | **Medio** | Controles en código + Render |
+| Público con `.env` demo / `APP_ENV=production` incompleto | **Mitigado** | Arranque rechazado si faltan curators/strong/weather/rate limit |
+| Decisiones agronómicas críticas / HU-08 como verdad | **Mitigado en contrato** | API fuerza `es_riesgo_agricola_validado=false` + `aviso_no_oficial`; UI refuerza aviso |
 
 ---
 
 ## 6. Riesgos pendientes priorizados
 
-| Pri | Riesgo |
-|---|---|
-| P1 | Defaults demo si se ignora checklist |
-| P1 | Primer restore de backup aún no ensayado en lab |
-| P1 | Smoke E2E con Ollama automatizado (falta acreditar corrida en staging) |
-| P2 | CVEs transitivos (chromadb/ragas/npm–Vite/esbuild) |
-| P2 | Cookie HttpOnly opcional (activar en HTTPS; Bearer sigue válido) |
-| P2 | React Router **v7 aplicado**; residual `esbuild`/Vite 5 |
-| P3 | Cola async index/query + sync compat; baseline `/health` OK |
+| Pri | Riesgo | Estado |
+|---|---|---|
+| P1 | Defaults demo si se ignora checklist | **Cerrado en production** (validator Settings) |
+| P1 | Primer restore de backup aún no ensayado en lab | **Acreditado** — `restore_ensayo.ps1` → 6 tablas lab |
+| P1 | Smoke E2E con Ollama automatizado | **Herramienta lista**; corrida live cuando servicios estén up |
+| P2 | CVEs transitivos (chromadb/ragas/npm–Vite/esbuild) | Abierto / documentado `SUPPLY_CHAIN.md` |
+| P2 | Cookie HttpOnly | **Disponible**; Render la activa; local default false (compat) |
+| P2 | Residual `esbuild`/Vite 5 | Abierto (upgrade Vite 8 breaking) |
+| P3 | Cola async en memoria | Aceptado PMV1 |
 
-Cierre 2026-11-20: smoke E2E Ollama, HttpOnly flag, cola async, RR v7 — ver `docs/EVALUACION_SESION_HTTPONLY.md`, `docs/COLA_ASYNC.md`, `scripts/smoke_e2e_ollama.py`.
+Detalle: `docs/EVIDENCIA_CIERRE_P1.md`.
 
 ---
 
@@ -124,7 +124,7 @@ Cierre 2026-11-20: smoke E2E Ollama, HttpOnly flag, cola async, RR v7 — ver `d
 1. Trazabilidad metodológica completa en `docs/00`–`07`.
 2. FURPS y OWASP avanzaron en la misma rama `owasp` sin romper arquitectura hexagonal.
 3. No se autoriza presentar el sistema como OWASP “completo” ni como asesor oficial.
-4. Residual operativo: ensayo restore firmado + `npm audit` residual Vite/`esbuild` (fix force = Vite 8).
+4. Residual operativo menor: pegar salida `[PASS]` del smoke Ollama live cuando staging esté disponible; CVEs transitivos.
 
 ---
 
@@ -134,9 +134,9 @@ Cierre 2026-11-20: smoke E2E Ollama, HttpOnly flag, cola async, RR v7 — ver `d
 
 Condiciones mínimas antes de piloto externo:
 
-1. Checklist de producción cumplido.  
-2. Backup MySQL + knowledge tomados.  
-3. Smoke E2E con MySQL y Ollama.  
-4. Al menos un curator configurado si knowledge está en `curators_only`.  
+1. Checklist de producción cumplido (ahora también **enforce** en código si `APP_ENV=production`).  
+2. Backup MySQL + knowledge tomados (**restore lab acreditado**).  
+3. Ejecutar smoke E2E con MySQL + Ollama y archivar `[PASS]`.  
+4. Curator configurado (`KNOWLEDGE_CURATOR_EMAILS` obligatorio en production).  
 
-Si no se cumplen, el dictamen degrada a **No apto para producción** (solo lab local).
+Si se usa `APP_ENV=development` con defaults demo, el dictamen aplica solo a **laboratorio local**.

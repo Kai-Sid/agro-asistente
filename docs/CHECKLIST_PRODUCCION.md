@@ -11,7 +11,9 @@ Usar antes de exponer el API fuera de un laboratorio controlado.
 | `CORS_ORIGINS` | Orígenes exactos HTTPS (sin `*`) |
 | `MYSQL_*` | Credenciales reales |
 
-## Controles OWASP recomendados
+## Controles OWASP (obligatorios si `APP_ENV=production`)
+
+El backend **no arranca** en production si faltan estos (validator en `settings.py`):
 
 | Variable | Valor |
 |---|---|
@@ -24,6 +26,8 @@ Usar antes de exponer el API fuera de un laboratorio controlado.
 | `PROMPT_HARDENING` | `true` |
 | `SECURITY_LOG_ENABLED` | `true` |
 | `URL_ALLOWLIST_ENFORCE` | `true` (o confiar en default prod) |
+| `AUTH_COOKIE_ENABLED` | `true` (HTTPS) |
+| `AUTH_COOKIE_SECURE` | `true` |
 
 ## Frontend
 
@@ -31,6 +35,7 @@ Usar antes de exponer el API fuera de un laboratorio controlado.
 |---|---|
 | `VITE_API_BASE_URL` | URL HTTPS del API sin barra final |
 | `VITE_AUTH_STORAGE` | `session` (o vacío: el build PROD ya usa session) |
+| `VITE_AUTH_COOKIE_MODE` | `true` (no guardar JWT en storage; requiere cookie HttpOnly) |
 
 ## Verificaciones go / no-go
 

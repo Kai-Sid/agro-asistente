@@ -49,6 +49,8 @@ def test_escenario_valido_devuelve_el_contrato() -> None:
     assert cuerpo["version_reglas"] == "sintetica-hu08-v1"
     assert cuerpo["naturaleza"] == "prototipo_academico_sintetico"
     assert cuerpo["es_riesgo_agricola_validado"] is False
+    assert "aviso_no_oficial" in cuerpo
+    assert "experimental" in cuerpo["aviso_no_oficial"].lower()
     assert "probabilidad" not in cuerpo
     assert "predict_proba" not in cuerpo
 

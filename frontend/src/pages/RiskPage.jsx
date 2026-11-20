@@ -236,7 +236,11 @@ export default function RiskPage() {
               diagnóstico ni una alerta oficial.
             </p>
             <aside className="notice-experimental" role="note">
-              <p>{ADVERTENCIA_EXPERIMENTAL}</p>
+              <p>{resultado.aviso_no_oficial || ADVERTENCIA_EXPERIMENTAL}</p>
+              <p>
+                <strong>No usar como verdad agronómica.</strong> Validado en campo:{" "}
+                {resultado.es_riesgo_agricola_validado ? "Sí" : "No"}.
+              </p>
             </aside>
             <dl>
               <dt>Modelo</dt>

@@ -172,6 +172,30 @@ class Settings(BaseSettings):
                 "OLLAMA_BASE_URL",
                 esquemas_extra={"http"},
             )
+        # Piloto endurecido: bloquear defaults demo en production (P1 / riesgo Alto).
+        if self.es_produccion:
+            if self.knowledge_mutation_policy != "curators_only":
+                raise ValueError(
+                    "En production KNOWLEDGE_MUTATION_POLICY debe ser 'curators_only'. "
+                    "Rollback lab: APP_ENV=development."
+                )
+            if not self.curator_email_set:
+                raise ValueError(
+                    "En production defina KNOWLEDGE_CURATOR_EMAILS "
+                    "(al menos un curador)."
+                )
+            if self.password_policy != "strong":
+                raise ValueError(
+                    "En production PASSWORD_POLICY debe ser 'strong'."
+                )
+            if not self.weather_require_auth:
+                raise ValueError(
+                    "En production WEATHER_REQUIRE_AUTH debe ser true."
+                )
+            if not self.rate_limit_enabled:
+                raise ValueError(
+                    "En production RATE_LIMIT_ENABLED debe ser true."
+                )
         return self
 
     @property

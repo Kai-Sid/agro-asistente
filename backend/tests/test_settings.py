@@ -1,3 +1,6 @@
+from pydantic import ValidationError
+import pytest
+
 from app.infrastructure.config.settings import Settings
 
 
@@ -76,3 +79,34 @@ def test_cors_separa_el_dominio_principal_del_subdominio_de_despliegue() -> None
     assert settings.cors_origin_regex == (
         r"^https://[A-Za-z0-9-]+\.agro-asistente\.pages\.dev$"
     )
+
+
+def test_produccion_rechaza_defaults_demo() -> None:
+    with pytest.raises(ValidationError):
+        Settings(
+            _env_file=None,
+            app_env="production",
+            jwt_secret="a" * 32,
+            knowledge_mutation_policy="open",
+            knowledge_curator_emails="a@b.com",
+            password_policy="strong",
+            weather_require_auth=True,
+            rate_limit_enabled=True,
+            url_allowlist_enforce=False,
+        )
+
+
+def test_produccion_acepta_checklist_endurecido() -> None:
+    s = Settings(
+        _env_file=None,
+        app_env="production",
+        jwt_secret="a" * 32,
+        knowledge_mutation_policy="curators_only",
+        knowledge_curator_emails="curator@example.com",
+        password_policy="strong",
+        weather_require_auth=True,
+        rate_limit_enabled=True,
+        url_allowlist_enforce=False,
+        ollama_base_url="http://127.0.0.1:11434",
+    )
+    assert s.es_produccion

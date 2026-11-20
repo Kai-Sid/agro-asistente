@@ -89,12 +89,20 @@ class EscenarioRiesgoRequest(BaseModel):
         return self
 
 
+AVISO_NO_OFICIAL = (
+    "Resultado experimental (HU-08). Modelo con datos sintéticos. "
+    "No es diagnóstico de campo, alerta oficial ni asesoría agronómica validada. "
+    "No debe usarse como única base para decisiones agrícolas reales."
+)
+
+
 class PrediccionRiesgoResponse(BaseModel):
     categoria_predicha: str
     identificador_modelo: str
     version_reglas: str
     naturaleza: str
     es_riesgo_agricola_validado: bool
+    aviso_no_oficial: str = AVISO_NO_OFICIAL
 
 
 def create_riesgo_router(container: CompositionRoot) -> APIRouter:
@@ -130,12 +138,14 @@ def create_riesgo_router(container: CompositionRoot) -> APIRouter:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=str(error),
             ) from error
+        # Contrato de seguridad: nunca afirmar validación agronómica de campo.
         return PrediccionRiesgoResponse(
             categoria_predicha=resultado.categoria_predicha,
             identificador_modelo=resultado.identificador_modelo,
             version_reglas=resultado.version_reglas,
-            naturaleza=resultado.naturaleza,
-            es_riesgo_agricola_validado=resultado.es_riesgo_agricola_validado,
+            naturaleza=resultado.naturaleza or "prototipo_academico_sintetico",
+            es_riesgo_agricola_validado=False,
+            aviso_no_oficial=AVISO_NO_OFICIAL,
         )
 
     return router
