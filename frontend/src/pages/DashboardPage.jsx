@@ -26,6 +26,12 @@ export default function DashboardPage() {
             </Link>
           </li>
           <li>
+            <Link to="/history">
+              <strong>Historial de consultas</strong>
+              <p>Revisa las consultas y respuestas ya registradas.</p>
+            </Link>
+          </li>
+          <li>
             <Link to="/knowledge">
               <strong>Base de conocimiento</strong>
               <p>Accede a la base de conocimiento disponible.</p>

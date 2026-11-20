@@ -6,6 +6,7 @@ from app.application.useCases.incorporar_conocimiento import IncorporarConocimie
 from app.application.useCases.indexar_conocimiento import IndexarConocimiento
 from app.application.useCases.iniciar_sesion_agricultor import IniciarSesionAgricultor
 from app.application.useCases.listar_contextos_agricolas import ListarContextosAgricolas
+from app.application.useCases.listar_consultas import ListarConsultas
 from app.application.useCases.listar_documentos_conocimiento import ListarDocumentosConocimiento
 from app.application.useCases.obtener_observaciones_meteorologicas import (
     ObtenerObservacionesMeteorologicas,
@@ -14,6 +15,7 @@ from app.application.useCases.predecir_riesgo import PredecirRiesgoAgricola
 from app.application.useCases.registrar_agricultor import RegistrarAgricultor
 from app.application.useCases.registrar_consulta import RegistrarConsulta
 from app.application.useCases.seleccionar_contexto_agricola import SeleccionarContextoAgricola
+from app.domain.ports.input.listar_consultas_port import PuertoListarConsultas
 from app.domain.ports.input.clasificar_consulta_port import PuertoClasificarConsulta
 from app.domain.ports.input.gestionar_contexto_port import (
     PuertoCrearContextoAgricola,
@@ -183,6 +185,9 @@ class CompositionRoot:
             recuperacion_rag=self.servicio_recuperacion_rag,
             repositorio_evidencia=self.puerto_repositorio_evidencia,
             clasificar_consulta=self.puerto_clasificar_consulta,
+        )
+        self.puerto_listar_consultas: PuertoListarConsultas = ListarConsultas(
+            repositorio_consulta=self.puerto_repositorio_consulta,
         )
         self.puerto_repositorio_documento_conocimiento: PuertoRepositorioDocumentoConocimiento = (
             RepositorioDocumentoConocimientoMysql(

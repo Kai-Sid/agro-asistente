@@ -97,6 +97,27 @@ Desde `backend/` con el entorno virtual activo:
 pytest
 ```
 
+Frontend (desde `frontend/`):
+
+```powershell
+npm test
+```
+
+Baseline de latencias (API levantada, opcional):
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe scripts\baseline_latencias.py --base-url http://127.0.0.1:8000
+```
+
+Backup/restore: ver `docs/RUNBOOK_BACKUP.md` o `powershell -File .\database\scripts\backup.ps1`.
+
+Checklist de producción: `docs/CHECKLIST_PRODUCCION.md`.
+
+Readiness MySQL: `GET /health/ready` (503 si la BD no responde).
+
+Historial de consultas (JWT): `GET /api/v1/queries` · UI `/history`.
+
 ## 6. Probar HU-01 (registro)
 
 Con el backend en marcha:
@@ -270,6 +291,22 @@ Una prueba de integración opcional:
 $env:OLLAMA_INTEGRATION="1"
 pytest tests/test_generacion_ollama.py -m integration
 ```
+
+### Smoke E2E automatizado (API + Ollama)
+
+Con API en `http://127.0.0.1:8000`, MySQL activo y Ollama con el modelo:
+
+```powershell
+cd backend
+$env:RUN_OLLAMA_INTEGRATION_TESTS="true"
+$env:GENERATION_PROVIDER="ollama"
+python scripts/smoke_e2e_ollama.py
+# o vía pytest:
+pytest tests/test_smoke_e2e_ollama.py -m integration -q
+```
+
+Sesión HttpOnly (opcional): `AUTH_COOKIE_ENABLED=true` — ver `docs/EVALUACION_SESION_HTTPONLY.md`.  
+Cola async: `POST /api/v1/knowledge/index/async`, `POST /api/v1/queries/async`, `GET /api/v1/jobs/{id}` — ver `docs/COLA_ASYNC.md`.
 
 ## Variables de entorno
 

@@ -21,12 +21,21 @@ export default function QueryPage() {
 
   function loadSelectedContext() {
     setLoadingContext(true);
+    setError("");
     listContexts()
       .then((response) => {
         const current = response.data.find((item) => item.is_selected) || null;
         setSelectedContext(current);
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          return;
+        }
+        setSelectedContext(null);
+        setError(
+          "No se pudo cargar el contexto agrícola seleccionado. Revisa tu conexión o vuelve a iniciar sesión.",
+        );
+      })
       .finally(() => setLoadingContext(false));
   }
 

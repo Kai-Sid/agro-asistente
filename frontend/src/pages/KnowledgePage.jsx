@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ingestKnowledge, listKnowledgeDocuments } from "../api/client";
+import { indexKnowledge, ingestKnowledge, listKnowledgeDocuments } from "../api/client";
 import AuthFooter from "../components/AuthFooter.jsx";
 import AuthenticatedShell from "../components/AuthenticatedShell.jsx";
 
@@ -14,6 +14,7 @@ export default function KnowledgePage() {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [indexing, setIndexing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -74,14 +75,56 @@ export default function KnowledgePage() {
       .finally(() => setSaving(false));
   }
 
+  function handleIndex() {
+    setIndexing(true);
+    setSuccess("");
+    setError("");
+    indexKnowledge()
+      .then((response) => {
+        const indexed = response.data?.indexed_documents;
+        const chunks = response.data?.total_chunks;
+        const parts = ["Indexación completada."];
+        if (indexed != null) {
+          parts.push(`Documentos: ${indexed}.`);
+        }
+        if (chunks != null) {
+          parts.push(`Fragmentos: ${chunks}.`);
+        }
+        setSuccess(parts.join(" "));
+        loadDocuments();
+      })
+      .catch((err) => {
+        const status = err.response?.status;
+        const detail = err.response?.data?.detail;
+        if (status === 401) {
+          return;
+        }
+        if (status === 403) {
+          setError(
+            typeof detail === "string"
+              ? detail
+              : "No tienes permiso de curator para indexar la base de conocimiento.",
+          );
+        } else {
+          setError(
+            typeof detail === "string"
+              ? detail
+              : "No se pudo indexar la base de conocimiento.",
+          );
+        }
+      })
+      .finally(() => setIndexing(false));
+  }
+
   return (
     <AuthenticatedShell>
       <section className="card card-wide">
-        <p className="eyebrow">HU-05</p>
+        <p className="eyebrow">HU-05 / HU-06</p>
         <h1>Base de conocimiento</h1>
         <p className="lead">
-          Incorpora documentos agrícolas de prueba. Se guarda el contenido y un hash para evitar duplicados.
-          Todavía no hay búsqueda semántica ni RAG.
+          Incorpora documentos agrícolas de prueba (hash SHA-256 para evitar duplicados).
+          Después indexa los fragmentos en Chroma para que la consulta agrícola (RAG) pueda
+          recuperar evidencias.
         </p>
 
         <form className="form" onSubmit={handleIngest}>
@@ -104,10 +147,21 @@ export default function KnowledgePage() {
               placeholder="# Material de prueba HU-05"
             />
           </label>
-          <button type="submit" disabled={saving}>
+          <button type="submit" disabled={saving || indexing}>
             {saving ? "Incorporando…" : "Incorporar documento"}
           </button>
         </form>
+
+        <div className="hero-actions" style={{ marginTop: "1rem" }}>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={handleIndex}
+            disabled={indexing || saving}
+          >
+            {indexing ? "Indexando…" : "Indexar en Chroma (RAG)"}
+          </button>
+        </div>
 
         {loading && <p>Cargando documentos…</p>}
         {success && <div className="status status-ok"><p>{success}</p></div>}

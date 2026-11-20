@@ -42,10 +42,21 @@ class _Repositorio:
     def guardar_respuesta(self, respuesta) -> None:
         self.respuestas.append(respuesta)
 
+    def guardar_interaccion(self, consulta, respuesta, evidencias=None) -> None:
+        self.guardar_consulta(consulta)
+        respuesta.consulta_id = consulta.id
+        self.guardar_respuesta(respuesta)
+
+    def listar_por_agricultor(self, agricultor_id: str, limite: int = 20):
+        return []
+
 
 class _Evidencias:
     def guardar_todas(self, evidencias) -> None:
         return None
+
+    def listar_por_consulta_id(self, consulta_id: str):
+        return []
 
 
 class _Generacion(PuertoGeneracionTexto):

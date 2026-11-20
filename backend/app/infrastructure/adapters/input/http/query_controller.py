@@ -14,6 +14,7 @@ from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
     dependencia_agricultor_autenticado,
 )
 from app.infrastructure.composition import CompositionRoot
+from app.infrastructure.job_queue import cola_trabajos
 from app.infrastructure.rate_limit import limitador_global
 from app.infrastructure.security_logging import log_seguridad
 
@@ -64,9 +65,43 @@ class SubmitQueryResponse(BaseModel):
     classification: QueryClassificationResponse
 
 
+class HistoryQueryResponse(BaseModel):
+    id: str
+    text: str
+    answer: str
+    generation_method: str
+    created_at: str
+
+
+class AsyncQueryAcceptedResponse(BaseModel):
+    job_id: str
+    status: str
+    job_type: str
+
+
 def create_query_router(container: CompositionRoot) -> APIRouter:
     router = APIRouter(prefix="/api/v1/queries", tags=["queries"])
     current_farmer_id = dependencia_agricultor_autenticado(container)
+
+    @router.get("", response_model=list[HistoryQueryResponse])
+    def list_queries(
+        farmer_id: str = Depends(current_farmer_id),
+        limit: int = 20,
+    ) -> list[HistoryQueryResponse]:
+        resultados = container.puerto_listar_consultas.ejecutar(
+            agricultor_id=farmer_id,
+            limite=limit,
+        )
+        return [
+            HistoryQueryResponse(
+                id=item.id,
+                text=item.text,
+                answer=item.answer,
+                generation_method=item.generation_method,
+                created_at=item.created_at,
+            )
+            for item in resultados
+        ]
 
     @router.post(
         "",
@@ -152,6 +187,90 @@ def create_query_router(container: CompositionRoot) -> APIRouter:
                 for item in result.evidencias
             ],
             classification=_clasificacion_http(result),
+        )
+
+    @router.post(
+        "/async",
+        status_code=status.HTTP_202_ACCEPTED,
+        response_model=AsyncQueryAcceptedResponse,
+    )
+    def submit_query_async(
+        payload: SubmitQueryRequest,
+        request: Request,
+        farmer_id: str = Depends(current_farmer_id),
+    ) -> AsyncQueryAcceptedResponse:
+        if not container.settings.async_jobs_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Cola asíncrona deshabilitada. Use POST /api/v1/queries.",
+            )
+        if container.settings.rate_limit_enabled:
+            permitido = limitador_global.permitir(
+                f"query:{farmer_id}",
+                container.settings.rate_limit_query_max,
+                container.settings.rate_limit_query_window_seconds,
+            )
+            if not permitido:
+                log_seguridad(
+                    "rate_limited",
+                    habilitado=container.settings.security_log_enabled,
+                    action="query_async",
+                    farmer_id=farmer_id,
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Demasiadas consultas. Inténtalo más tarde.",
+                    headers={
+                        "Retry-After": str(
+                            container.settings.rate_limit_query_window_seconds
+                        )
+                    },
+                )
+        del request
+        texto = payload.text
+
+        def _worker() -> dict:
+            command = ComandoRegistrarConsulta(agricultor_id=farmer_id, texto=texto)
+            result = container.puerto_registrar_consulta.ejecutar(command)
+            return {
+                "id": result.id,
+                "text": result.texto,
+                "answer": result.respuesta,
+                "generation_method": result.metodo_generacion,
+                "created_at": result.creado_en,
+                "context": {
+                    "id": result.contexto.id,
+                    "crop": result.contexto.cultivo,
+                    "region": result.contexto.region,
+                    "plot_name": result.contexto.nombre_predio,
+                },
+                "evidences": [
+                    {
+                        "document_id": item.documento_id,
+                        "document_title": item.titulo_documento,
+                        "chunk_id": item.fragmento_id,
+                        "excerpt": item.extracto,
+                        "similarity_score": item.puntaje_similitud,
+                        "rank_order": item.orden_relevancia,
+                        "origin_reference": resolver_referencia_documento(
+                            container.puerto_repositorio_documento_conocimiento,
+                            item.documento_id,
+                        ),
+                    }
+                    for item in result.evidencias
+                ],
+                "classification": _clasificacion_http(result).model_dump(),
+            }
+
+        job = cola_trabajos.enqueue(
+            "query_submit",
+            _worker,
+            farmer_id=farmer_id,
+        )
+        return AsyncQueryAcceptedResponse(
+            job_id=job.id,
+            status=job.status.value,
+            job_type=job.job_type,
         )
 
     return router

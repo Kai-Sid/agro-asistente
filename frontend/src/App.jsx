@@ -7,7 +7,9 @@ import DashboardPage from "./pages/DashboardPage.jsx";
 import ContextPage from "./pages/ContextPage.jsx";
 import QueryPage from "./pages/QueryPage.jsx";
 import KnowledgePage from "./pages/KnowledgePage.jsx";
+import HistoryPage from "./pages/HistoryPage.jsx";
 import RiskPage from "./pages/RiskPage.jsx";
+import NotFoundPage from "./pages/NotFoundPage.jsx";
 
 export default function App() {
   return (
@@ -19,9 +21,11 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/context" element={<ContextPage />} />
         <Route path="/query" element={<QueryPage />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="/knowledge" element={<KnowledgePage />} />
         <Route path="/riesgo" element={<RiskPage />} />
       </Route>
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

@@ -4,28 +4,26 @@
 |---|---|
 | Proyecto | Agro Asistente (`Kai-Sid/agro-asistente`) |
 | Rol | Auditor Principal de Calidad y Seguridad |
-| Fecha | 2026-11-13 |
-| Entradas | `03_Auditoria_Implementacion_FURPS.md` (Downloads), `docs/06_auditoria_implementacion_owasp.md`, estado local del workspace |
-| Commit base remoto / HEAD registrado | `eaac3da2e9c70ab6678a34a51249b6f2a772247d` |
-| Alcance del dictamen | Producto PMV1 + remediaciones OWASP presentes en el workspace local (aún **no** consolidadas en `origin/main`) |
+| Fecha | 2026-11-20 |
+| Entradas | `03_auditoria_implementacion_furps.md`, `06_auditoria_implementacion_owasp.md`, estado del workspace |
+| Rama | `owasp` |
+| Alcance | PMV1 + plan maestro FURPS+/OWASP ejecutado en esta corrida |
 
 ---
 
 ## 1. Resumen ejecutivo
 
-Agro Asistente conserva una base funcional de PMV1 (auth, contextos, consultas RAG, conocimiento, clima, clasificación, riesgo) y muestra **mejora de seguridad documentada e implementada en local** (score OWASP **38 → 60/100**). En paralelo, el plan FURPS+ **no está cerrado**: la auditoría 03 acredita que `main` remoto no incorporó las 18 mejoras como avance posterior, y varias brechas de calidad/operación siguen abiertas.
-
-**Dictámenes condensados**
+Se ejecutaron las tres fases del plan maestro (`00`): auditoría/mejora FURPS+, delta OWASP residual, y validación documental con pruebas parciales reales.
 
 | Dimensión | Veredicto |
 |---|---|
-| Calidad (FURPS+) | **Cumple parcialmente** |
-| Seguridad (OWASP Top 10) | **Cumple parcialmente** |
-| Funcionalidad | **Se preservó** la existente, con **riesgos de regresión** si se activan flags endurecidos sin pruebas completas |
-| Riesgo operativo | **Medio** (piloto controlado) / **Alto** si se publica con defaults de demo |
-| **Recomendación final** | **Apto para producción con observaciones** |
+| Calidad (FURPS+) | **Cumple parcialmente** (score orientativo ~74/100; plan 02 cerrado con observaciones) |
+| Seguridad (OWASP Top 10) | **Cumple parcialmente** (score **68/100**; A06 ya no “no corregida”) |
+| Funcionalidad | **Se preservó** el PMV1; cambios aditivos (UI index, atomicidad, flags) |
+| Riesgo operativo | **Medio** con checklist de producción; **Alto** con defaults demo públicos |
+| **Recomendación final** | **Apto para producción con observaciones** (piloto académico / despliegue controlado) |
 
-“Producción” se interpreta aquí como **despliegue controlado / piloto académico**, no como servicio abierto masivo sin checklist de endurecimiento.
+“Producción” = piloto controlado, no servicio masivo de asesoría agronómica oficial.
 
 ---
 
@@ -33,51 +31,38 @@ Agro Asistente conserva una base funcional de PMV1 (auth, contextos, consultas R
 
 ### Veredicto: Cumple parcialmente
 
-**Fundamento (entrada 03 + estado actual)**
+Fundamento (`03`):
 
-- El informe FURPS de implementación concluye **no aprobado el cierre del plan** sobre `main` en `eaac3da`: 0 mejoras nuevas verificadas como avance del plan; 7 parciales solo por capacidades **preexistentes**; 11 no implementadas/no acreditadas.
-- Capacidad de producto preexistente (JWT/bcrypt, formularios, arquitectura hexagonal, batería de tests, avisos HU-08) **sí** sostiene un PMV1 usable, pero no equivale a cumplimiento pleno FURPS+.
-- Puntaje orientativo del informe 01 (**~62,6/100**) **no fue remedido ni re-medido** tras un plan FURPS ejecutado en remoto.
+- Implementadas: M02 runbook, U01 UX, F01 index UI, M08 atomicidad, S01 CI/npm test.
+- Cerrados después: F-HIST (historial UI/API), P01 (baseline `/health` live), backup script + ensayo dump, `/health/ready`.
+- M03: **acreditado** con MySQL (`test_security_owasp.py` **14 passed**).
 
-**Brechas de calidad que siguen condicionando el dictamen**
+Evidencias de prueba registradas:
 
-| Área FURPS+ | Situación |
-|---|---|
-| Functionality | Flujos core presentes; sin historial GET; curaduría de conocimiento solo vía flag OWASP local |
-| Usability | Feedback parcial; catch vacío de contexto y falta de 404 comodín (según 03) sin evidencia de cierre |
-| Reliability | Persistencia de consulta no atómica; health/readiness no plenamente diferenciados; backups/RTO no acreditados |
-| Performance | Indexación síncrona; sin benchmarks ni cola; dependencia de Ollama |
-| Supportability | Sin CI Actions observado; `requirements.txt` con rangos abiertos; RAGAS pendiente de resultados oficiales |
-
-**Nota de sincronización Git:** las remediaciones OWASP existen como cambios **locales sin commit/push**. Quien audite solo `origin/main` no verá aún esa mejora de seguridad. El cierre de calidad institucional requiere versionar y revalidar.
+- Frontend `npm test`: **23 passed**.
+- Backend unitarios (subset): **46+ passed**.
+- Seguridad con MySQL: **14 passed** (`test_security_owasp.py`).
 
 ---
 
-## 3. Estado de seguridad (OWASP Top 10)
+## 3. Estado de seguridad (OWASP)
 
 ### Veredicto: Cumple parcialmente
 
-**Fundamento (entrada 06)**
-
 | Indicador | Valor |
 |---|---|
-| Score inicial (04) | 38 / 100 |
-| Score tras remediación (06) | **60 / 100** |
-| Categorías corregidas | 1 (A09 logging de aplicación) |
-| Parciales | 8 |
-| No corregidas | 1 (A06 componentes / supply chain) |
+| Score 04 histórico | 38 |
+| Score 06 previo | 60 |
+| Score 06 actual | **68** |
+| Categorías “no corregidas” | **0** |
+| Parciales | 9 |
+| Corregida | 1 (A09) |
 
-**Cumple parcialmente** porque:
-
-- Hay controles reales en código (JWT enforce en prod, rate limit, roles curator opcionales, CORS estricto, prompt hardening, checksums de modelos, logging de seguridad).
-- **No** se alcanza cierre OWASP: defaults de demo dejan varios controles inactivos; A06 sin lock/audit; sesión aún en web storage; rate limit solo en memoria.
-- Evidencia dinámica incompleta en el entorno de auditoría (MySQL caído bloqueó 3 tests de login/roles/API con persistencia); 11 tests unitarios de seguridad **sí** pasaron.
-
-**Condición sine qua non para acercarse a “cumple” operativo**
+Condición operativa (go): aplicar `docs/CHECKLIST_PRODUCCION.md` completo.
 
 ```env
 APP_ENV=production
-JWT_SECRET=<≥32 caracteres, no default>
+JWT_SECRET=<≥32 chars>
 KNOWLEDGE_MUTATION_POLICY=curators_only
 KNOWLEDGE_CURATOR_EMAILS=...
 PASSWORD_POLICY=strong
@@ -87,97 +72,71 @@ MODEL_INTEGRITY_CHECK=true
 URL_ALLOWLIST_ENFORCE=true
 ```
 
-Sin ese endurecimiento, el dictamen de seguridad **no** habilita exposición pública amplia.
+Frontend build: `VITE_AUTH_STORAGE=session` (o vacío en PROD).
 
 ---
 
 ## 4. Funcionalidad
 
-### Veredicto: Se preservó la funcionalidad existente
+### Veredicto: Se preservó
 
 | Criterio | Evaluación |
 |---|---|
-| Preservación de procesos de negocio | **Sí** — cambios OWASP aditivos (flags, claims `role`, códigos 403/429); rutas de negocio conservadas |
-| Regresiones observadas | **No evidenciadas** en comparación funcional de contratos principales; OpenAPI/health se endurecen solo en `production` |
-| Riesgos de regresión | **Sí existen** (ver abajo) |
+| Procesos de negocio PMV1 | Intactos (auth, contextos, query RAG, knowledge, clima, riesgo) |
+| Regresiones observadas | No evidenciadas en contratos principales |
+| Riesgos de regresión | Activar flags harden sin curadores / password strong / weather auth |
 
-**Riesgos de regresión pendientes de control**
+Smoke recomendado (matriz V-REG) — **no ejecutado E2E completo aquí** (API/MySQL/Ollama no levantados):
 
-1. Activar `curators_only` sin curadores configurados → bloqueo de ingest/index en demos.
-2. `PASSWORD_POLICY=strong` → rechaza registros que antes pasaban con solo 8 caracteres.
-3. `WEATHER_REQUIRE_AUTH=true` → rompe clientes que consultaban clima anónimo.
-4. Rate limits agresivos / multi-réplica → falsos 429; limiter en memoria no coherente entre instancias.
-5. Suite completa de regresión **no** ejecutada aquí con MySQL; CI remoto no acreditado (0 Actions según informe 03).
+1. register → login → context → query → knowledge list/index  
+2. Repetir con flags prod en staging  
 
 ---
 
 ## 5. Riesgo operativo
 
-### Clasificación: Medio (con endurecimiento) — Alto (con defaults de demo)
-
-| Escenario | Riesgo | Motivo |
-|---|---|---|
-| Piloto académico / aula / usuarios limitados + flags de prod | **Medio** | Controles disponibles; superficie acotada; deuda FURPS conocida |
-| Despliegue público con `.env` de desarrollo | **Alto** | Knowledge abierto, password básico, weather público, JWT débil posible, sin backups/CI acreditados |
-| Producción masiva con decisiones agronómicas críticas | **Alto** | RAGAS pendiente, HU-08 sintético, sin tenancy pleno ni recuperación acreditada |
+| Escenario | Riesgo |
+|---|---|
+| Piloto aula + checklist | **Medio** |
+| Público con `.env` demo | **Alto** |
+| Decisiones agronómicas críticas / HU-08 como verdad | **Alto** (RAGAS/HU-08 no validados en campo) |
 
 ---
 
-## 6. Riesgos pendientes (priorizados)
+## 6. Riesgos pendientes priorizados
 
-| Prioridad | Riesgo | Origen |
-|---|---|---|
-| P1 | Remediaciones OWASP no versionadas en `origin/main` | Estado Git local vs remoto |
-| P1 | Corpus RAG alterable si knowledge permanece `open` | OWASP A01/A04 |
-| P1 | Ausencia acreditada de backups/restauración | FURPS M02 |
-| P1 | Suite de regresión + MySQL no verificada en esta auditoría final | Limitación de entorno / FURPS M03 |
-| P2 | Persistencia no atómica de consulta/respuesta/evidencias | FURPS M08 |
-| P2 | Supply chain Python sin lock/audit (A06 / M14) | OWASP + FURPS |
-| P2 | JWT en almacenamiento web (XSS) | OWASP A02/A07 / FURPS M15 |
-| P2 | Calidad RAG/HU-08 no validada en campo / RAGAS pendiente | FURPS M09/M10 |
-| P3 | Observabilidad (SLO, dashboards) y readiness diferenciado | FURPS M04/M05 |
-| P3 | Rate limit no distribuido | OWASP A04/A07 |
+| Pri | Riesgo |
+|---|---|
+| P1 | Defaults demo si se ignora checklist |
+| P1 | Primer restore de backup aún no ensayado en lab |
+| P1 | Smoke E2E con Ollama automatizado (falta acreditar corrida en staging) |
+| P2 | CVEs transitivos (chromadb/ragas/npm–Vite/esbuild) |
+| P2 | Cookie HttpOnly opcional (activar en HTTPS; Bearer sigue válido) |
+| P2 | React Router **v7 aplicado**; residual `esbuild`/Vite 5 |
+| P3 | Cola async index/query + sync compat; baseline `/health` OK |
+
+Cierre 2026-11-20: smoke E2E Ollama, HttpOnly flag, cola async, RR v7 — ver `docs/EVALUACION_SESION_HTTPONLY.md`, `docs/COLA_ASYNC.md`, `scripts/smoke_e2e_ollama.py`.
 
 ---
 
 ## 7. Observaciones
 
-1. **Doble pista de auditoría:** FURPS juzgó el cierre del *plan de calidad* sobre `main` remoto; OWASP juzgó *remediaciones de seguridad* sobre el workspace local. El dictamen final integra ambas sin confundir “producto usable” con “planes cerrados”.
-2. **Compatibilidad:** la estrategia de flags OWASP fue correcta para no romper demos; el costo es que “código presente ≠ control activo”.
-3. **Trazabilidad:** consolidar en Git (`commit` + PR) los cambios de seguridad y los docs `04`–`07` antes de cualquier liberación formal.
-4. **Validación mínima pendiente antes de piloto:** MySQL arriba + pytest auth/context/knowledge/roles; smoke login → contexto → consulta; checklist `.env` de producción.
-5. **No se autoriza** presentar el sistema como asesoramiento agronómico oficial ni como OWASP “completo”.
+1. Trazabilidad metodológica completa en `docs/00`–`07`.
+2. FURPS y OWASP avanzaron en la misma rama `owasp` sin romper arquitectura hexagonal.
+3. No se autoriza presentar el sistema como OWASP “completo” ni como asesor oficial.
+4. Residual operativo: ensayo restore firmado + `npm audit` residual Vite/`esbuild` (fix force = Vite 8).
 
 ---
 
 ## 8. Recomendación final
 
-# Apto para producción con observaciones
+**Apto para producción con observaciones.**
 
-**Alcance autorizado:** despliegue **controlado** (piloto académico / entorno limitado), siempre que se cumplan las observaciones bloqueantes siguientes.
+Condiciones mínimas antes de piloto externo:
 
-**Observaciones bloqueantes (obligatorias)**
+1. Checklist de producción cumplido.  
+2. Backup MySQL + knowledge tomados.  
+3. Smoke E2E con MySQL y Ollama.  
+4. Al menos un curator configurado si knowledge está en `curators_only`.  
 
-1. Publicar/versionar remediaciones OWASP y documentación `04`–`07`.
-2. Desplegar con `APP_ENV=production` y checklist de secretos/políticas de la sección 3.
-3. Ejecutar y archivar suite de regresión con MySQL (auth, contextos, knowledge, roles).
-4. Nombrar curadores si se activa escritura restringida de conocimiento.
-5. Mantener avisos de prototipo HU-08 / no decisión crítica de campo.
-
-**Observaciones no bloqueantes (deuda explícita)**
-
-- Cerrar ítems FURPS M02, M05, M08, M09 y supply chain (A06).
-- Migrar sesión a almacenamiento más seguro (HttpOnly) en una fase posterior.
-- Introducir CI con auditoría de dependencias.
-
-**Fuera de alcance de esta aprobación**
-
-- Producción abierta a Internet sin límites de usuarios, sin backups ni monitoreo.
-- Uso como sistema oficial de recomendación agrícola.
-
-Si no se cumplen las observaciones bloqueantes, el dictamen se degrada automáticamente a **No apto para producción**.
-
----
-
-**Firma de dictamen:** Auditor Principal de Calidad y Seguridad — 2026-11-13.  
-**Independencia:** síntesis documental basada en entradas FURPS/OWASP y estado observable del workspace; no certifica despliegues productivos no inspeccionados.
+Si no se cumplen, el dictamen degrada a **No apto para producción** (solo lab local).

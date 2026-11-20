@@ -24,3 +24,10 @@ test("el cliente y el proxy local no fijan el backend de producción", () => {
   assert.match(vite, /\/health/);
   assert.match(vite, /127\.0\.0\.1:8000/);
 });
+
+test("en build PROD el almacenamiento de sesión por defecto es sessionStorage", () => {
+  const cliente = readFileSync(new URL("./client.js", import.meta.url), "utf8");
+  assert.match(cliente, /import\.meta\.env\.PROD/);
+  assert.match(cliente, /sessionStorage/);
+  assert.match(cliente, /VITE_AUTH_STORAGE/);
+});

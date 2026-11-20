@@ -89,6 +89,14 @@ class Settings(BaseSettings):
     model_integrity_check: bool = True
     security_log_enabled: bool = True
 
+    # Cookie HttpOnly opcional (compat: default false; Bearer sigue válido).
+    auth_cookie_enabled: bool = False
+    auth_cookie_secure: bool = False
+    auth_cookie_samesite: str = "lax"
+
+    # Cola async para indexación / consultas largas.
+    async_jobs_enabled: bool = True
+
     @field_validator("clasificador_margen_minimo")
     @classmethod
     def validar_margen_clasificador(cls, value: float) -> float:
@@ -115,6 +123,14 @@ class Settings(BaseSettings):
             raise ValueError(
                 "KNOWLEDGE_MUTATION_POLICY debe ser 'open' o 'curators_only'."
             )
+        return limpio
+
+    @field_validator("auth_cookie_samesite")
+    @classmethod
+    def validar_samesite(cls, value: str) -> str:
+        limpio = (value or "lax").strip().lower()
+        if limpio not in {"lax", "strict", "none"}:
+            raise ValueError("AUTH_COOKIE_SAMESITE debe ser lax|strict|none.")
         return limpio
 
     @model_validator(mode="after")

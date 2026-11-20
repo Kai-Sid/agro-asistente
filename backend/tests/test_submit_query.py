@@ -41,6 +41,9 @@ class RepositorioConsultaEnMemoria(PuertoRepositorioConsulta):
         self.contextos_seleccionados: dict[str, ContextoAgricola] = {}
         self.consultas: list[Consulta] = []
         self.respuestas: list[Respuesta] = []
+        self.evidencias_atomic: list[Evidencia] = []
+        self._sink_evidencias = None
+        self.fallar_al_guardar_evidencias = False
 
     def buscar_contexto_seleccionado(self, agricultor_id: str) -> ContextoAgricola | None:
         contexto = self.contextos_seleccionados.get(agricultor_id)
@@ -53,6 +56,53 @@ class RepositorioConsultaEnMemoria(PuertoRepositorioConsulta):
 
     def guardar_respuesta(self, respuesta: Respuesta) -> None:
         self.respuestas.append(respuesta)
+
+    def guardar_interaccion(
+        self,
+        consulta: Consulta,
+        respuesta: Respuesta,
+        evidencias: list[Evidencia] | None = None,
+    ) -> None:
+        # Simula rollback: no deja consulta/respuesta si falla la unidad atómica.
+        if self.fallar_al_guardar_evidencias:
+            raise RuntimeError("fallo simulado al persistir la interacción")
+        self.guardar_consulta(consulta)
+        respuesta.consulta_id = consulta.id
+        self.guardar_respuesta(respuesta)
+        lote = list(evidencias or [])
+        for item in lote:
+            item.consulta_id = consulta.id
+            item.respuesta_id = respuesta.id
+            self.evidencias_atomic.append(item)
+        if self._sink_evidencias is not None and lote:
+            self._sink_evidencias.guardar_todas(lote)
+
+    def listar_por_agricultor(
+        self, agricultor_id: str, limite: int = 20
+    ) -> list[dict[str, str]]:
+        tope = max(1, min(int(limite or 20), 50))
+        items: list[dict[str, str]] = []
+        for consulta in reversed(self.consultas):
+            if consulta.agricultor_id != agricultor_id:
+                continue
+            respuesta = next(
+                (r for r in self.respuestas if r.consulta_id == consulta.id),
+                None,
+            )
+            items.append(
+                {
+                    "id": consulta.id,
+                    "text": consulta.texto.value,
+                    "answer": respuesta.texto_respuesta if respuesta else "",
+                    "generation_method": (
+                        respuesta.metodo_generacion if respuesta else ""
+                    ),
+                    "created_at": consulta.creado_en.isoformat(),
+                }
+            )
+            if len(items) >= tope:
+                break
+        return items
 
 
 class RepositorioEvidenciaEnMemoria(PuertoRepositorioEvidencia):
@@ -142,6 +192,7 @@ def _caso_de_uso(
     generator = generacion or GeneracionTextoFalsa()
     retrieval = rag or RecuperacionRagFalsa()
     evidencias = repositorio_evidencia or RepositorioEvidenciaEnMemoria()
+    repo._sink_evidencias = evidencias
     return (
         RegistrarConsulta(
             repo,
@@ -528,4 +579,31 @@ def test_submit_query_error_de_generacion_no_persiste_aunque_el_fragmento_respal
     assert rag.consultas
     assert repository.consultas == []
     assert repository.respuestas == []
+    assert evidence_repo.evidencias == []
+
+
+def test_guardar_interaccion_atomica_no_deja_consulta_huerfana_si_falla() -> None:
+    use_case, repository, _generation, rag, evidence_repo = _caso_de_uso(
+        rag=RecuperacionRagFalsa(
+            [
+                FragmentoRecuperado(
+                    documento_id="doc-1",
+                    titulo_documento="Riego",
+                    fragmento_id="abc:chunk:0000",
+                    extracto="Riego frecuente en floración.",
+                    puntaje_similitud=0.8,
+                )
+            ]
+        ),
+    )
+    repository.contextos_seleccionados[FARMER_A] = _contexto(FARMER_A)
+    repository.fallar_al_guardar_evidencias = True
+
+    with pytest.raises(RuntimeError, match="fallo simulado"):
+        use_case.ejecutar(ComandoRegistrarConsulta(agricultor_id=FARMER_A, texto=QUESTION))
+
+    assert rag.consultas == [QUESTION]
+    assert repository.consultas == []
+    assert repository.respuestas == []
+    assert repository.evidencias_atomic == []
     assert evidence_repo.evidencias == []

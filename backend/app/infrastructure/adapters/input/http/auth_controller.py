@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 
 from app.domain.exceptions import (
@@ -11,6 +11,7 @@ from app.domain.exceptions import (
 )
 from app.domain.ports.input.iniciar_sesion_agricultor_port import ComandoIniciarSesionAgricultor
 from app.domain.ports.input.registrar_agricultor_port import ComandoRegistrarAgricultor
+from app.infrastructure.auth_cookie import establecer_cookie_auth, limpiar_cookie_auth
 from app.infrastructure.composition import CompositionRoot
 from app.infrastructure.rate_limit import limitador_global
 from app.infrastructure.security_logging import log_seguridad
@@ -149,7 +150,11 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
         status_code=status.HTTP_200_OK,
         response_model=LoginFarmerResponse,
     )
-    def login(payload: LoginFarmerRequest, request: Request) -> LoginFarmerResponse:
+    def login(
+        payload: LoginFarmerRequest,
+        request: Request,
+        response: Response,
+    ) -> LoginFarmerResponse:
         ip = _cliente_ip(request)
         email_clave = (payload.email or "").strip().lower() or "unknown"
         _aplicar_rate_limit(
@@ -195,6 +200,7 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
             role=result.agricultor.rol,
             ip=ip,
         )
+        establecer_cookie_auth(response, result.access_token, container.settings)
         return LoginFarmerResponse(
             access_token=result.access_token,
             token_type=result.token_type,
@@ -206,5 +212,14 @@ def create_auth_router(container: CompositionRoot) -> APIRouter:
                 role=result.agricultor.rol,
             ),
         )
+
+    @router.post("/logout", status_code=status.HTTP_200_OK)
+    def logout(response: Response) -> dict[str, str]:
+        limpiar_cookie_auth(response, container.settings)
+        log_seguridad(
+            "logout",
+            habilitado=container.settings.security_log_enabled,
+        )
+        return {"status": "ok"}
 
     return router

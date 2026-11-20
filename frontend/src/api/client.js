@@ -4,15 +4,31 @@ import { urlBaseApi } from "./baseUrl.js";
 export const api = axios.create({
   baseURL: urlBaseApi(import.meta.env),
   timeout: 5000,
+  withCredentials: true,
 });
 
 const ACCESS_TOKEN_KEY = "agro_asistente_access_token";
 const SESSION_FARMER_KEY = "agro_asistente_session_farmer";
 const SESSION_ROLE_KEY = "agro_asistente_session_role";
-const PUBLIC_AUTH_PATHS = ["/api/v1/auth/login", "/api/v1/auth/register"];
+const PUBLIC_AUTH_PATHS = [
+  "/api/v1/auth/login",
+  "/api/v1/auth/register",
+  "/api/v1/auth/logout",
+];
+
+function authCookieMode() {
+  return String(import.meta.env.VITE_AUTH_COOKIE_MODE || "").toLowerCase() === "true";
+}
 
 function authStorage() {
-  const mode = String(import.meta.env.VITE_AUTH_STORAGE || "local").toLowerCase();
+  // Producción: sessionStorage por defecto (reduce persistencia XSS). Dev local: localStorage.
+  // Override: VITE_AUTH_STORAGE=local|session
+  const configured = String(import.meta.env.VITE_AUTH_STORAGE || "").toLowerCase();
+  const mode =
+    configured ||
+    (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.PROD
+      ? "session"
+      : "local");
   if (mode === "session" && typeof window !== "undefined" && window.sessionStorage) {
     return window.sessionStorage;
   }
@@ -20,6 +36,9 @@ function authStorage() {
 }
 
 export function saveAccessToken(token) {
+  if (authCookieMode()) {
+    return;
+  }
   if (typeof token !== "string" || !token.trim()) {
     return;
   }
@@ -27,6 +46,9 @@ export function saveAccessToken(token) {
 }
 
 export function getAccessToken() {
+  if (authCookieMode()) {
+    return null;
+  }
   const token = authStorage().getItem(ACCESS_TOKEN_KEY);
   if (!token || token === "undefined" || token === "null") {
     return null;
@@ -118,6 +140,10 @@ export function loginFarmer(payload) {
   return api.post("/api/v1/auth/login", payload);
 }
 
+export function logoutFarmer() {
+  return api.post("/api/v1/auth/logout").catch(() => null);
+}
+
 export function listContexts() {
   return api.get("/api/v1/contexts");
 }
@@ -134,6 +160,19 @@ export function submitAgriculturalQuery(payload) {
   return api.post("/api/v1/queries", payload, { timeout: 120000 });
 }
 
+export function submitAgriculturalQueryAsync(payload) {
+  return api.post("/api/v1/queries/async", payload, { timeout: 30000 });
+}
+
+export function listAgriculturalQueries(limit = 20) {
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 20, 50));
+  return api.get("/api/v1/queries", { params: { limit: safeLimit } });
+}
+
+export function getJob(jobId) {
+  return api.get(`/api/v1/jobs/${jobId}`, { timeout: 30000 });
+}
+
 export function predictAgriculturalRisk(payload) {
   return api.post("/api/v1/riesgo", payload, { timeout: 120000 });
 }
@@ -144,4 +183,12 @@ export function listKnowledgeDocuments() {
 
 export function ingestKnowledge(payload) {
   return api.post("/api/v1/knowledge/ingest", payload);
+}
+
+export function indexKnowledge() {
+  return api.post("/api/v1/knowledge/index", null, { timeout: 120000 });
+}
+
+export function indexKnowledgeAsync() {
+  return api.post("/api/v1/knowledge/index/async", null, { timeout: 30000 });
 }

@@ -72,17 +72,13 @@ class RegistrarConsulta(PuertoRegistrarConsulta):
             generada.texto_respuesta,
             [fragmento.extracto for fragmento in utilizados],
         )
-        self._repositorio_consulta.guardar_consulta(consulta)
         respuesta = Respuesta.crear(
             consulta_id=consulta.id,
             texto_respuesta=texto_controlado,
             metodo_generacion=generada.metodo_generacion,
         )
-        self._repositorio_consulta.guardar_respuesta(respuesta)
-
         evidencias = _evidencias_desde_fragmentos(consulta.id, respuesta.id, utilizados)
-        if evidencias:
-            self._repositorio_evidencia.guardar_todas(evidencias)
+        self._repositorio_consulta.guardar_interaccion(consulta, respuesta, evidencias)
 
         return ResultadoRegistrarConsulta(
             id=consulta.id,

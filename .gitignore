@@ -26,6 +26,9 @@ frontend/build/
 backend/evaluation/results/*.json
 backend/evaluation/results/*.jsonl
 
+# Backups locales (runbook / scripts)
+backups/
+
 # Chroma vector store data
 chroma_data/
 chroma_test_data/

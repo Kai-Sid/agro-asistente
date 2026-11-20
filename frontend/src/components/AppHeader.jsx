@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { clearSession } from "../api/client";
+import { clearSession, logoutFarmer } from "../api/client";
 import BrandMark from "./BrandMark.jsx";
 
 export default function AppHeader() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
-  function handleLogout() {
-    clearSession();
-    navigate("/login", { replace: true });
+  async function handleLogout() {
+    try {
+      await logoutFarmer();
+    } finally {
+      clearSession();
+      navigate("/login", { replace: true });
+    }
   }
 
   function closeMenu() {
@@ -40,6 +44,9 @@ export default function AppHeader() {
           </NavLink>
           <NavLink to="/query" onClick={closeMenu}>
             Consulta
+          </NavLink>
+          <NavLink to="/history" onClick={closeMenu}>
+            Historial
           </NavLink>
           <NavLink to="/knowledge" onClick={closeMenu}>
             Base de conocimiento

@@ -17,6 +17,7 @@ from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
     dependencia_escritura_conocimiento,
 )
 from app.infrastructure.composition import CompositionRoot
+from app.infrastructure.job_queue import cola_trabajos
 from app.infrastructure.security_logging import log_seguridad
 
 
@@ -42,6 +43,12 @@ class IndexKnowledgeResponse(BaseModel):
     total_chunks: int
     collection: str
     documents: list[KnowledgeDocumentResponse]
+
+
+class AsyncJobAcceptedResponse(BaseModel):
+    job_id: str
+    status: str
+    job_type: str
 
 
 def _documento_response(resultado: ResultadoDocumentoConocimiento) -> KnowledgeDocumentResponse:
@@ -128,6 +135,48 @@ def create_knowledge_router(container: CompositionRoot) -> APIRouter:
             total_chunks=result.total_fragmentos,
             collection=container.settings.chroma_collection,
             documents=[_documento_response(item) for item in result.documentos],
+        )
+
+    @router.post(
+        "/index/async",
+        status_code=status.HTTP_202_ACCEPTED,
+        response_model=AsyncJobAcceptedResponse,
+    )
+    def index_knowledge_async(
+        farmer_id: str = Depends(require_knowledge_writer),
+    ) -> AsyncJobAcceptedResponse:
+        if not container.settings.async_jobs_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Cola asíncrona deshabilitada. Use POST /api/v1/knowledge/index.",
+            )
+
+        def _worker() -> dict:
+            result = container.puerto_indexar_conocimiento.ejecutar()
+            log_seguridad(
+                "knowledge_index_async",
+                habilitado=container.settings.security_log_enabled,
+                farmer_id=farmer_id,
+                indexed=result.documentos_indexados,
+            )
+            return {
+                "indexed_documents": result.documentos_indexados,
+                "total_chunks": result.total_fragmentos,
+                "collection": container.settings.chroma_collection,
+                "documents": [
+                    _documento_response(item).model_dump() for item in result.documentos
+                ],
+            }
+
+        job = cola_trabajos.enqueue(
+            "knowledge_index",
+            _worker,
+            farmer_id=farmer_id,
+        )
+        return AsyncJobAcceptedResponse(
+            job_id=job.id,
+            status=job.status.value,
+            job_type=job.job_type,
         )
 
     @router.get("/documents", response_model=list[KnowledgeDocumentResponse])

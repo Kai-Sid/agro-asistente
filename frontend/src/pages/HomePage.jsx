@@ -39,21 +39,19 @@ export default function HomePage() {
         </div>
 
         <div className={`status tech-status ${error ? "status-error" : "status-ok"}`}>
-          {loading && <p>Comprobando GET /health…</p>}
+          {loading && <p>Comprobando disponibilidad del servicio…</p>}
           {!loading && error && <p>{error}</p>}
           {!loading && health && (
-            <dl>
-              <dt>Estado</dt>
-              <dd>{health.status}</dd>
-              <dt>Servicio</dt>
-              <dd>{health.service}</dd>
-              <dt>Fase</dt>
-              <dd>{health.phase}</dd>
-              <dt>Arquitectura</dt>
-              <dd>{health.architecture}</dd>
-              <dt>MySQL</dt>
-              <dd>{health.mysql}</dd>
-            </dl>
+            <p>
+              Servicio{" "}
+              {health.status === "ok" ? "disponible" : "con incidencias"}
+              {health.mysql === "connected"
+                ? " · base de datos conectada"
+                : health.mysql
+                  ? " · base de datos no disponible"
+                  : ""}
+              .
+            </p>
           )}
         </div>
       </section>

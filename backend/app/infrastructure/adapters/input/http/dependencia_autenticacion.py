@@ -1,10 +1,11 @@
 from collections.abc import Callable
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.domain.exceptions import ErrorTokenInvalido
 from app.domain.ports.output.token_verifier_port import IdentidadAutenticada
+from app.infrastructure.auth_cookie import COOKIE_NAME
 from app.infrastructure.composition import CompositionRoot
 from app.infrastructure.security_logging import log_seguridad
 
@@ -16,15 +17,35 @@ esquema_bearer_jwt = HTTPBearer(
 )
 
 
+def _token_desde_request(
+    request: Request,
+    credenciales: HTTPAuthorizationCredentials | None,
+    *,
+    cookie_habilitada: bool,
+) -> str:
+    if credenciales is not None and credenciales.credentials.strip():
+        return credenciales.credentials.strip()
+    if cookie_habilitada:
+        cookie = (request.cookies.get(COOKIE_NAME) or "").strip()
+        if cookie:
+            return cookie
+    return ""
+
+
 def dependencia_identidad_autenticada(
     container: CompositionRoot,
 ) -> Callable[..., IdentidadAutenticada]:
-    """Valida el Bearer token y devuelve la identidad completa."""
+    """Valida Bearer token o cookie HttpOnly y devuelve la identidad completa."""
 
     def identidad_autenticada(
+        request: Request,
         credenciales: HTTPAuthorizationCredentials | None = Depends(esquema_bearer_jwt),
     ) -> IdentidadAutenticada:
-        token = credenciales.credentials.strip() if credenciales is not None else ""
+        token = _token_desde_request(
+            request,
+            credenciales,
+            cookie_habilitada=container.settings.auth_cookie_enabled,
+        )
         if not token:
             log_seguridad(
                 "auth_denied",

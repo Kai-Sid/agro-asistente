@@ -12,6 +12,8 @@ services:
     startCommand: python -m app.main
     healthCheckPath: /health
     envVars:
+      - key: APP_ENV
+        value: production
       - key: GENERATION_PROVIDER
         value: ollama
       - key: OLLAMA_MODEL
@@ -46,6 +48,20 @@ services:
         value: urn:wmo:md:pe-senamhi:synop-hourly
       - key: SENAMHI_WIS2_TIMEOUT_SECONDS
         value: "20"
+      - key: PASSWORD_POLICY
+        value: strong
+      - key: KNOWLEDGE_MUTATION_POLICY
+        value: curators_only
+      - key: WEATHER_REQUIRE_AUTH
+        value: "true"
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: MODEL_INTEGRITY_CHECK
+        value: "true"
+      - key: PROMPT_HARDENING
+        value: "true"
+      - key: SECURITY_LOG_ENABLED
+        value: "true"
       - key: MYSQL_HOST
         sync: false
       - key: MYSQL_USER
@@ -57,6 +73,8 @@ services:
       - key: CORS_ORIGINS
         sync: false
       - key: OLLAMA_BASE_URL
+        sync: false
+      - key: KNOWLEDGE_CURATOR_EMAILS
         sync: false
 
   - type: web
@@ -72,3 +90,5 @@ services:
     envVars:
       - key: VITE_API_BASE_URL
         sync: false
+      - key: VITE_AUTH_STORAGE
+        value: session

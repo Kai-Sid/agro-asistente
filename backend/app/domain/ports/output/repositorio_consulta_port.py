@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from app.domain.entities.consulta import Consulta
 from app.domain.entities.contexto_agricola import ContextoAgricola
+from app.domain.entities.evidencia import Evidencia
 from app.domain.entities.respuesta import Respuesta
 
 
@@ -17,3 +18,18 @@ class PuertoRepositorioConsulta(ABC):
     @abstractmethod
     def guardar_respuesta(self, respuesta: Respuesta) -> None:
         """Persiste la respuesta asociada a una consulta."""
+
+    @abstractmethod
+    def guardar_interaccion(
+        self,
+        consulta: Consulta,
+        respuesta: Respuesta,
+        evidencias: list[Evidencia] | None = None,
+    ) -> None:
+        """Persiste consulta, respuesta y evidencias en una sola unidad atómica."""
+
+    @abstractmethod
+    def listar_por_agricultor(
+        self, agricultor_id: str, limite: int = 20
+    ) -> list[dict[str, str]]:
+        """Historial del agricultor: id, text, answer, generation_method, created_at."""
