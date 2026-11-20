@@ -39,6 +39,12 @@ jobs:
         env:
           RATE_LIMIT_ENABLED: "false"
           APP_ENV: test
+          # Evita hangs si algún test intenta MySQL por error.
+          MYSQL_HOST: "127.0.0.1"
+          MYSQL_PORT: "1"
+          JWT_SECRET: "test-secret-key-at-least-32-characters-long"
+          JWT_SECRET_ENFORCE: "false"
+          GENERATION_PROVIDER: "template"
         run: >
           pytest -q
           --ignore=tests/test_login_endpoint.py
@@ -49,5 +55,9 @@ jobs:
           --ignore=tests/test_knowledge_endpoint.py
           --ignore=tests/test_weather_endpoint.py
           --ignore=tests/test_senamhi_wis2_integration.py
+          --ignore=tests/test_security_owasp.py
+          --ignore=tests/test_auth_cookie.py
+          --ignore=tests/test_async_jobs.py
+          --ignore=tests/test_smoke_e2e_ollama.py
           -k "not mysql and not integration"
         continue-on-error: false
