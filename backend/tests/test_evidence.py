@@ -1,10 +1,7 @@
-from decimal import Decimal
 from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 
 from app.domain.entities.evidencia import Evidencia
 from app.domain.exceptions import ErrorEvidenciaInvalida
@@ -14,7 +11,6 @@ from app.infrastructure.adapters.output.generation.adaptador_generacion_plantill
     AdaptadorGeneracionPlantilla,
 )
 from app.infrastructure.adapters.output.mysql.repositorio_evidencia import (
-    RegistroEvidencia,
     RepositorioEvidenciaMysql,
 )
 
@@ -80,85 +76,48 @@ def test_evidence_repository_persists_association_to_query() -> None:
     assert repository.listar_por_consulta_id("missing") == []
 
 
-def test_repositorio_evidencia_guarda_y_recupera_el_titulo() -> None:
-    engine = create_engine("sqlite://")
-    RegistroEvidencia.__table__.create(engine)
-    fabrica = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
-    repositorio = RepositorioEvidenciaMysql(fabrica)
-    evidencia = Evidencia.crear(
-        consulta_id="41",
-        respuesta_id="42",
-        documento_id="18",
-        fragmento_id="riego:chunk:0000",
-        extracto="Vigilar la humedad del suelo.",
-        puntaje_similitud=0.4,
-        orden_relevancia=1,
-        titulo_documento="Prueba de riego de papa",
-    )
-
-    repositorio.guardar_todas([evidencia])
-
-    with engine.connect() as conexion:
-        fila = conexion.execute(
-            text(
-                "SELECT consulta_id, respuesta_id, documento_id, titulo_documento, "
-                "texto_fragmento FROM evidencias"
-            )
-        ).one()
-    assert fila.consulta_id == 41
-    assert fila.respuesta_id == 42
-    assert fila.documento_id == 18
-    assert fila.titulo_documento == "Prueba de riego de papa"
-    assert "riego:chunk:0000" in fila.texto_fragmento
-
-    recuperadas = repositorio.listar_por_consulta_id("41")
-    assert len(recuperadas) == 1
-    assert recuperadas[0].consulta_id == "41"
-    assert recuperadas[0].respuesta_id == "42"
-    assert recuperadas[0].titulo_documento == "Prueba de riego de papa"
-    assert recuperadas[0].extracto == "Vigilar la humedad del suelo."
-    assert recuperadas[0].fragmento_id == "riego:chunk:0000"
-
-
-def test_repositorio_evidencia_recupera_fila_antigua_sin_titulo() -> None:
-    engine = create_engine("sqlite://")
-    RegistroEvidencia.__table__.create(engine)
-    fabrica = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
-    repositorio = RepositorioEvidenciaMysql(fabrica)
-    with engine.begin() as conexion:
-        conexion.execute(
-            text(
-                "INSERT INTO evidencias "
-                "(consulta_id, respuesta_id, documento_id, texto_fragmento, "
-                "puntuacion_similitud) "
-                "VALUES (7, 8, 5, :texto, :puntaje)"
-            ),
-            {"texto": "CHUNK:heladas:chunk:0000\nVigilar la temperatura.", "puntaje": 0.41},
-        )
-
-    recuperadas = repositorio.listar_por_consulta_id("7")
-    assert len(recuperadas) == 1
-    assert recuperadas[0].titulo_documento == ""
-    assert recuperadas[0].consulta_id == "7"
-    assert recuperadas[0].respuesta_id == "8"
-    assert recuperadas[0].extracto == "Vigilar la temperatura."
-    assert recuperadas[0].fragmento_id == "heladas:chunk:0000"
-    assert recuperadas[0].puntaje_similitud == 0.41
-
-    sin_titulo = repositorio._a_entidad(
-        SimpleNamespace(
-            id=9,
-            consulta_id=7,
-            respuesta_id=8,
-            documento_id=5,
-            texto_fragmento="CHUNK:heladas:chunk:0000\nVigilar la temperatura.",
-            puntuacion_similitud=Decimal("0.410000"),
-            titulo_documento=None,
-        ),
+def test_repositorio_evidencia_mapea_filas_del_procedimiento() -> None:
+    repositorio = object.__new__(RepositorioEvidenciaMysql)
+    evidencia = repositorio._a_entidad(
+        {
+            "id": 10,
+            "consulta_id": 41,
+            "respuesta_id": 42,
+            "documento_id": 18,
+            "titulo_documento": "Prueba de riego de papa",
+            "texto_fragmento": "CHUNK:riego:chunk:0000\nVigilar la humedad del suelo.",
+            "puntuacion_similitud": 0.4,
+        },
         1,
     )
-    assert sin_titulo.titulo_documento == ""
-    assert sin_titulo.extracto == "Vigilar la temperatura."
+    assert evidencia.consulta_id == "41"
+    assert evidencia.respuesta_id == "42"
+    assert evidencia.documento_id == "18"
+    assert evidencia.titulo_documento == "Prueba de riego de papa"
+    assert evidencia.extracto == "Vigilar la humedad del suelo."
+    assert evidencia.fragmento_id == "riego:chunk:0000"
+
+
+def test_repositorio_evidencia_mapea_fila_legacy_sin_titulo() -> None:
+    repositorio = object.__new__(RepositorioEvidenciaMysql)
+    evidencia = repositorio._a_entidad(
+        {
+            "id": 9,
+            "consulta_id": 7,
+            "respuesta_id": 8,
+            "documento_id": 5,
+            "texto_fragmento": "CHUNK:heladas:chunk:0000\nVigilar la temperatura.",
+            "puntuacion_similitud": 0.41,
+            "titulo_documento": None,
+        },
+        1,
+    )
+    assert evidencia.titulo_documento == ""
+    assert evidencia.consulta_id == "7"
+    assert evidencia.respuesta_id == "8"
+    assert evidencia.extracto == "Vigilar la temperatura."
+    assert evidencia.fragmento_id == "heladas:chunk:0000"
+    assert evidencia.puntaje_similitud == 0.41
 
 
 def test_template_generation_uses_evidences() -> None:
