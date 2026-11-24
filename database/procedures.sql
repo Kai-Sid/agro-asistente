@@ -80,14 +80,20 @@ CREATE PROCEDURE sp_contexto_agricola_seleccionar_para_agricultor(
   IN p_agricultor_id INT
 )
 BEGIN
-  UPDATE contextos_agricolas
-  SET esta_seleccionado = CASE WHEN id = p_contexto_id THEN 1 ELSE 0 END
-  WHERE agricultor_id = p_agricultor_id;
+  IF EXISTS (
+    SELECT 1
+    FROM contextos_agricolas
+    WHERE id = p_contexto_id AND agricultor_id = p_agricultor_id
+  ) THEN
+    UPDATE contextos_agricolas
+    SET esta_seleccionado = CASE WHEN id = p_contexto_id THEN 1 ELSE 0 END
+    WHERE agricultor_id = p_agricultor_id;
+  END IF;
   SELECT id, agricultor_id, nombre_parcela, cultivo, region, observaciones, esta_seleccionado, fecha_creacion
   FROM contextos_agricolas
   WHERE id = p_contexto_id AND agricultor_id = p_agricultor_id
   LIMIT 1;
-END$$
+END$
 
 DROP PROCEDURE IF EXISTS sp_contexto_agricola_buscar_seleccionado$$
 CREATE PROCEDURE sp_contexto_agricola_buscar_seleccionado(IN p_agricultor_id INT)
