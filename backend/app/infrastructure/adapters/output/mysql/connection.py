@@ -1,4 +1,4 @@
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
@@ -6,7 +6,7 @@ from app.infrastructure.config.settings import Settings, get_settings
 
 
 class Base(DeclarativeBase):
-    """Declarative base de SQLAlchemy. Solo debe usarse en infraestructura MySQL."""
+    """Declarative base conservada para compatibilidad de infraestructura MySQL."""
 
 
 def create_mysql_engine(settings: Settings | None = None) -> Engine:
@@ -25,13 +25,18 @@ def create_session_factory(settings: Settings | None = None) -> sessionmaker:
 
 
 def ping_mysql(settings: Settings | None = None) -> bool:
+    """Comprueba el canal DBAPI sin emitir una consulta SQL desde la aplicación."""
+    engine = create_mysql_engine(settings)
+    raw_connection = None
     try:
-        engine = create_mysql_engine(settings)
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
+        raw_connection = engine.raw_connection()
+        raw_connection.ping(reconnect=False)
         return True
     except (SQLAlchemyError, OSError):
         return False
+    finally:
+        if raw_connection is not None:
+            raw_connection.close()
 
 
 def id_a_entero(valor: str | int) -> int:
