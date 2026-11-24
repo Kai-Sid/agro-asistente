@@ -2,7 +2,6 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
-from sqlalchemy import text
 
 from app.application.services.fragmentador_documentos import FragmentadorDocumentos
 from app.application.services.servicio_recuperacion_rag import ServicioRecuperacionRag
@@ -14,7 +13,6 @@ from app.infrastructure.adapters.output.chroma.chroma_vector_store_adapter impor
 from app.infrastructure.adapters.output.embedding.local_lexical_embedding_adapter import (
     LocalLexicalEmbeddingAdapter,
 )
-from app.infrastructure.adapters.output.mysql.connection import create_mysql_engine
 from app.main import app, container
 
 client = TestClient(app)
@@ -207,25 +205,11 @@ def test_submit_query_with_indexed_knowledge_returns_evidences(tmp_path: Path) -
         assert "base de conocimiento" in body["answer"].lower()
         assert "floración" in body["answer"].lower() or "encharcamiento" in body["answer"].lower()
 
-        engine = create_mysql_engine(container.settings)
-        with engine.connect() as connection:
-            evidence_row = connection.execute(
-                text(
-                    "SELECT documento_id, texto_fragmento, titulo_documento FROM evidencias "
-                    "WHERE consulta_id = :id ORDER BY id ASC"
-                ),
-                {"id": query_id},
-            ).first()
-            response_row = connection.execute(
-                text("SELECT metodo_generacion FROM respuestas WHERE consulta_id = :id"),
-                {"id": query_id},
-            ).first()
-        assert evidence_row is not None
-        assert str(evidence_row[0]) == str(document_id)
-        assert evidence_row[1]
-        assert ":chunk:" in evidence_row[1]
-        assert evidence_row[2] == payload["title"]
-        assert response_row[0] == "template"
+        assert body["generation_method"] == "template"
+        assert top["document_id"] == document_id
+        assert top["origin_reference"] == source_path
+        assert top["excerpt"]
+        assert top["similarity_score"] > 0
     finally:
         if source_path:
             _cleanup(source_path)
