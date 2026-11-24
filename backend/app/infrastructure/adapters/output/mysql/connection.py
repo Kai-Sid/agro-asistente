@@ -1,3 +1,4 @@
+import pymysql.err
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
@@ -32,7 +33,7 @@ def ping_mysql(settings: Settings | None = None) -> bool:
         raw_connection = engine.raw_connection()
         raw_connection.ping(reconnect=False)
         return True
-    except (SQLAlchemyError, OSError):
+    except (SQLAlchemyError, pymysql.err.Error, OSError):
         return False
     finally:
         if raw_connection is not None:
