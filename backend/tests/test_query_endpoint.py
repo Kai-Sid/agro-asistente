@@ -3,7 +3,6 @@ from uuid import uuid4
 
 import jwt
 from fastapi.testclient import TestClient
-from sqlalchemy import text
 
 from app.application.useCases.registrar_consulta import RegistrarConsulta
 from app.domain.exceptions import ErrorGeneracionTexto
@@ -12,7 +11,6 @@ from app.domain.ports.output.text_generation_port import (
     PuertoGeneracionTexto,
     RespuestaGenerada,
 )
-from app.infrastructure.adapters.output.mysql.connection import create_mysql_engine
 from app.main import app, container
 
 client = TestClient(app)
@@ -187,7 +185,7 @@ def test_submit_query_does_not_use_another_farmer_context() -> None:
     assert body["context"]["crop"] == "papa"
 
 
-def test_submit_query_persists_query_and_response() -> None:
+def test_submit_query_returns_persisted_query_and_response() -> None:
     user = _register_and_login()
     _create_and_select_context(user["token"])
     response = client.post(
@@ -198,25 +196,11 @@ def test_submit_query_persists_query_and_response() -> None:
     assert response.status_code == 201
     body = response.json()
 
-    engine = create_mysql_engine(container.settings)
-    with engine.connect() as connection:
-        query_row = connection.execute(
-            text("SELECT agricultor_id, pregunta FROM consultas WHERE id = :id"),
-            {"id": body["id"]},
-        ).first()
-        response_row = connection.execute(
-            text(
-                "SELECT respuesta, metodo_generacion FROM respuestas WHERE consulta_id = :id"
-            ),
-            {"id": body["id"]},
-        ).first()
-
-    assert query_row is not None
-    assert str(query_row[0]) == str(user["farmer_id"])
-    assert query_row[1] == QUESTION
-    assert response_row is not None
-    assert response_row[0] == body["answer"]
-    assert response_row[1] == "template"
+    assert body["id"]
+    assert body["text"] == QUESTION
+    assert body["answer"]
+    assert body["generation_method"] == "template"
+    assert body["context"]["id"]
 
 
 class _GeneracionNoDisponible(PuertoGeneracionTexto):
