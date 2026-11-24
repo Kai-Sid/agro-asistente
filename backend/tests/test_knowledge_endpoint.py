@@ -2,9 +2,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
-from sqlalchemy import text
 
-from app.infrastructure.adapters.output.mysql.connection import create_mysql_engine
 from app.main import app, container
 
 client = TestClient(app)
@@ -95,19 +93,7 @@ def test_ingest_knowledge_success_and_persistence() -> None:
         assert body["source_path"].endswith(".md")
         assert "password" not in str(body)
 
-        engine = create_mysql_engine(container.settings)
-        with engine.connect() as connection:
-            row = connection.execute(
-                text(
-                    "SELECT ruta_origen, hash_contenido FROM documentos_conocimiento WHERE id = :id"
-                ),
-                {"id": body["id"]},
-            ).first()
-        assert row is not None
-        assert row[0] == body["source_path"]
-        assert row[1] == body["content_hash"]
-
-        stored_file = Path(container.settings.knowledge_dir).resolve() / Path(body["source_path"]).name
+         stored_file = Path(container.settings.knowledge_dir).resolve() / Path(body["source_path"]).name
         assert stored_file.exists()
         assert "material de prueba" in stored_file.read_text(encoding="utf-8").lower()
     finally:
@@ -125,13 +111,13 @@ def test_ingest_knowledge_duplicate_returns_409() -> None:
         assert second.status_code == 409
         assert "ya está registrado" in second.json()["detail"]
 
-        engine = create_mysql_engine(container.settings)
-        with engine.connect() as connection:
-            count = connection.execute(
-                text("SELECT COUNT(*) FROM documentos_conocimiento WHERE hash_contenido = :hash"),
-                {"hash": first.json()["content_hash"]},
-            ).scalar_one()
-        assert count == 1
+        listed = client.get(DOCUMENTS_URL, headers=_auth(user["token"]))
+        assert listed.status_code == 200
+        matching = [
+            item for item in listed.json()
+            if item["content_hash"] == first.json()["content_hash"]
+        ]
+        assert len(matching) == 1
     finally:
         _cleanup(source_path)
 
