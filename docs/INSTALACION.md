@@ -59,7 +59,7 @@ Crear la base y las tablas con el esquema reproducible:
 mysql -u root -p < ..\database\schema.sql
 ```
 
-En entornos XAMPP, el cliente suele estar en `C:\xampp\mysql\bin\mysql.exe` y el usuario `root` puede no tener contraseña:
+Ejecuta primero el esquema y luego los procedimientos almacenados. El usuario de MySQL necesita permiso `CREATE ROUTINE` para instalarlos. Las operaciones de persistencia del backend usan estos procedimientos.\n\nEn entornos XAMPP, el cliente suele estar en `C:\xampp\mysql\bin\mysql.exe` y el usuario `root` puede no tener contraseña:
 
 ```powershell
 & "C:\xampp\mysql\bin\mysql.exe" -u root < ..\database\schema.sql
