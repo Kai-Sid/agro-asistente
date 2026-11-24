@@ -1,15 +1,12 @@
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Integer, Numeric, String, Text, select
+from sqlalchemy import DateTime, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, sessionmaker
 
 from app.domain.entities.evidencia import Evidencia
 from app.domain.ports.output.repositorio_evidencia_port import PuertoRepositorioEvidencia
-from app.infrastructure.adapters.output.mysql.connection import (
-    Base,
-    id_a_dominio,
-    id_a_entero,
-)
+from app.infrastructure.adapters.output.mysql.connection import Base, id_a_dominio, id_a_entero
+from app.infrastructure.adapters.output.mysql.procedures import MysqlStoredProcedureGateway
 
 _PREFIJO_FRAGMENTO = "CHUNK:"
 
@@ -31,51 +28,54 @@ class RegistroEvidencia(Base):
 
 class RepositorioEvidenciaMysql(PuertoRepositorioEvidencia):
     def __init__(self, session_factory: sessionmaker) -> None:
-        self._session_factory = session_factory
+        self._procedures = MysqlStoredProcedureGateway(session_factory)
 
     def guardar_todas(self, evidencias: list[Evidencia]) -> None:
         if not evidencias:
             return
-        registros = [
-            RegistroEvidencia(
-                consulta_id=id_a_entero(item.consulta_id),
-                respuesta_id=id_a_entero(item.respuesta_id) if item.respuesta_id else None,
-                documento_id=id_a_entero(item.documento_id),
-                titulo_documento=(item.titulo_documento or "").strip(),
-                texto_fragmento=_texto_con_fragmento(item.fragmento_id, item.extracto),
-                puntuacion_similitud=Decimal(str(item.puntaje_similitud)),
+        calls = [
+            (
+                "sp_evidencia_guardar",
+                (
+                    id_a_entero(item.consulta_id),
+                    id_a_entero(item.respuesta_id) if item.respuesta_id else None,
+                    id_a_entero(item.documento_id),
+                    (item.titulo_documento or "").strip(),
+                    _texto_con_fragmento(item.fragmento_id, item.extracto),
+                    Decimal(str(item.puntaje_similitud)),
+                ),
             )
             for item in evidencias
         ]
-        with self._session_factory() as session:
-            session.add_all(registros)
-            session.commit()
+        self._procedures.call_many(calls)
 
     def listar_por_consulta_id(self, consulta_id: str) -> list[Evidencia]:
-        with self._session_factory() as session:
-            registros = session.scalars(
-                select(RegistroEvidencia)
-                .where(RegistroEvidencia.consulta_id == id_a_entero(consulta_id))
-                .order_by(RegistroEvidencia.id.asc())
-            ).all()
-            return [
-                self._a_entidad(registro, orden)
-                for orden, registro in enumerate(registros, start=1)
-            ]
+        rows = self._procedures.call(
+            "sp_evidencias_listar_por_consulta",
+            (id_a_entero(consulta_id),),
+        )
+        return [
+            self._a_entidad(registro, orden)
+            for orden, registro in enumerate(rows, start=1)
+        ]
 
-    def _a_entidad(self, registro: RegistroEvidencia, orden_relevancia: int) -> Evidencia:
-        fragmento_id, extracto = _partir_texto_fragmento(registro.texto_fragmento)
-        puntaje = float(registro.puntuacion_similitud or 0)
+    def _a_entidad(
+        self, registro: dict[str, object], orden_relevancia: int
+    ) -> Evidencia:
+        fragmento_id, extracto = _partir_texto_fragmento(
+            str(registro["texto_fragmento"] or "")
+        )
+        puntaje = float(registro["puntuacion_similitud"] or 0)
         return Evidencia(
-            evidencia_id=id_a_dominio(registro.id),
-            consulta_id=id_a_dominio(registro.consulta_id),
-            respuesta_id=id_a_dominio(registro.respuesta_id or 0),
-            documento_id=id_a_dominio(registro.documento_id),
-            fragmento_id=fragmento_id or id_a_dominio(registro.id),
+            evidencia_id=id_a_dominio(registro["id"]),
+            consulta_id=id_a_dominio(registro["consulta_id"]),
+            respuesta_id=id_a_dominio(registro["respuesta_id"] or 0),
+            documento_id=id_a_dominio(registro["documento_id"]),
+            fragmento_id=fragmento_id or id_a_dominio(registro["id"]),
             extracto=extracto,
             puntaje_similitud=puntaje,
             orden_relevancia=orden_relevancia,
-            titulo_documento=(registro.titulo_documento or "").strip(),
+            titulo_documento=str(registro["titulo_documento"] or "").strip(),
         )
 
 
