@@ -13,7 +13,7 @@ def create_health_router(container: CompositionRoot) -> APIRouter:
         return {
             "status": "ok",
             "service": container.settings.app_name,
-            "phase": "1",
+            "phase": "3",
             "architecture": "hexagonal",
             "mysql": mysql_status,
         }
