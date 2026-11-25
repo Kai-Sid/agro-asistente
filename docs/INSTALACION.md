@@ -44,7 +44,7 @@ Respuesta esperada:
 {
   "status": "ok",
   "service": "agro-asistente",
-  "phase": "1",
+  "phase": "3",
   "architecture": "hexagonal"
 }
 ```
@@ -68,6 +68,33 @@ En entornos XAMPP, el cliente suele estar en `C:\xampp\mysql\bin\mysql.exe` y el
 ```
 
 El esquema es compatible con MySQL 8. Si se usa MariaDB localmente para desarrollo, se emplea collation `utf8mb4_unicode_ci`.
+
+## Instalación de la base de desarrollo en Laragon (PMV3)
+
+Si usas MySQL 8.4.3 de Laragon, desde la raíz del repositorio:
+
+```powershell
+$mysql = "C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe"
+& $mysql -u root -e "source database/schema.sql"
+& $mysql -u root -D agro_asistente -e "source database/pmv3_schema.sql"
+& $mysql -u root -D agro_asistente -e "source database/procedures.sql"
+```
+
+Si tu usuario root tiene contraseña, agrega `-p` después de `-u root`. Mantén este orden: primero el esquema base, después las tablas PMV3 y al final los procedimientos almacenados. `pmv3_schema.sql` crea tablas, y `procedures.sql` instala las rutinas requeridas por la aplicación.
+
+Confirma la instalación:
+
+```powershell
+& $mysql -u root -D agro_asistente -e "SHOW PROCEDURE STATUS WHERE Db = 'agro_asistente';"
+```
+
+Crea un usuario administrador desde la carpeta `backend`, con el entorno virtual activo:
+
+```powershell
+python -m scripts.crear_administrador
+```
+
+El asistente solicita nombre, correo y contraseña de al menos 12 caracteres; la contraseña se almacena con bcrypt. No existe un usuario administrativo predeterminado.
 
 ## 4. Frontend
 
@@ -288,7 +315,7 @@ Configuración relevante de HU-06:
 - `OLLAMA_MODEL` — por defecto `qwen2.5:1.5b` (ver nota Qwen2.5 1.8B más arriba)
 - `OLLAMA_TIMEOUT_SECONDS` — por defecto `90`
 
-## Puertos locales
+## Rutas PMV3\n\n- Login administrador: http://localhost:5173/admin/login\n- Panel administrador: http://localhost:5173/admin\n- Documentos: http://localhost:5173/admin/documents\n- Indicadores: http://localhost:5173/admin/metrics\n- Evaluaciones de IA: http://localhost:5173/admin/evaluations\n\n## Puertos locales
 
 | Servicio | URL |
 |---|---|
