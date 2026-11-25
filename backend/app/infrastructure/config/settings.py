@@ -39,7 +39,8 @@ class Settings(BaseSettings):
 
     rag_top_k: int = 3
     rag_min_similarity: float = 0.12
-    chunk_size: int = 500\n    evaluation_dataset_path: str = "evaluation/data/pmv3_evaluation_v1.json"
+    chunk_size: int = 500
+    evaluation_dataset_path: str = "evaluation/data/pmv3_evaluation_v1.json"
 
     embedding_provider: str = "local"
     embedding_dimension: int = 128
