@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerFarmer } from "../api/client";
 import PublicShell from "../components/PublicShell.jsx";
+import { aplicarMensajeValidacion, limpiarMensajeValidacion } from "../forms/validacionEsp.js";
 
 export default function RegisterPage() {
   const [names, setNames] = useState("");
@@ -70,6 +71,8 @@ export default function RegisterPage() {
             <input
               value={names}
               onChange={(event) => setNames(event.target.value)}
+              onInvalid={aplicarMensajeValidacion}
+              onInput={limpiarMensajeValidacion}
               required
               autoComplete="given-name"
             />
@@ -79,6 +82,8 @@ export default function RegisterPage() {
             <input
               value={lastNames}
               onChange={(event) => setLastNames(event.target.value)}
+              onInvalid={aplicarMensajeValidacion}
+              onInput={limpiarMensajeValidacion}
               required
               autoComplete="family-name"
             />
@@ -89,6 +94,8 @@ export default function RegisterPage() {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              onInvalid={aplicarMensajeValidacion}
+              onInput={limpiarMensajeValidacion}
               required
               autoComplete="email"
             />
@@ -99,6 +106,8 @@ export default function RegisterPage() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              onInvalid={aplicarMensajeValidacion}
+              onInput={limpiarMensajeValidacion}
               required
               minLength={8}
               autoComplete="new-password"

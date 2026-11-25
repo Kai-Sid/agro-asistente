@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { listContexts, submitAgriculturalQuery } from "../api/client";
 import {
   MENSAJE_CARGA,
@@ -18,6 +18,7 @@ export default function QueryPage() {
   const [loading, setLoading] = useState(false);
   const [loadingContext, setLoadingContext] = useState(false);
   const [error, setError] = useState("");
+  const location = useLocation();
 
   function loadSelectedContext() {
     setLoadingContext(true);
@@ -32,7 +33,17 @@ export default function QueryPage() {
 
   useEffect(() => {
     loadSelectedContext();
-  }, []);
+    function refreshOnFocus() {
+      if (document.visibilityState === "hidden") return;
+      loadSelectedContext();
+    }
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnFocus);
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnFocus);
+    };
+  }, [location.pathname, location.key]);
 
   function handleSubmit(event) {
     event.preventDefault();

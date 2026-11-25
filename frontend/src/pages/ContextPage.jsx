@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createAgriculturalContext, listContexts, selectContext } from "../api/client";
 import AuthFooter from "../components/AuthFooter.jsx";
 import AuthenticatedShell from "../components/AuthenticatedShell.jsx";
+import { aplicarMensajeValidacion, limpiarMensajeValidacion } from "../forms/validacionEsp.js";
 
 const emptyForm = {
   plot_name: "",
@@ -109,11 +110,25 @@ export default function ContextPage() {
           </label>
           <label>
             Cultivo
-            <input name="crop" value={form.crop} onChange={handleChange} required />
+            <input
+              name="crop"
+              value={form.crop}
+              onChange={handleChange}
+              onInvalid={aplicarMensajeValidacion}
+              onInput={limpiarMensajeValidacion}
+              required
+            />
           </label>
           <label>
             Región
-            <input name="region" value={form.region} onChange={handleChange} required />
+            <input
+              name="region"
+              value={form.region}
+              onChange={handleChange}
+              onInvalid={aplicarMensajeValidacion}
+              onInput={limpiarMensajeValidacion}
+              required
+            />
           </label>
           <label>
             Notas

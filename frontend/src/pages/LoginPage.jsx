@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { loginFarmer, saveAccessToken, saveSessionFarmer } from "../api/client";
 import PublicShell from "../components/PublicShell.jsx";
+import { aplicarMensajeValidacion, limpiarMensajeValidacion } from "../forms/validacionEsp.js";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -74,6 +75,8 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              onInvalid={aplicarMensajeValidacion}
+              onInput={limpiarMensajeValidacion}
               required
               autoComplete="email"
               disabled={loading}
@@ -85,6 +88,8 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              onInvalid={aplicarMensajeValidacion}
+              onInput={limpiarMensajeValidacion}
               required
               autoComplete="current-password"
               disabled={loading}

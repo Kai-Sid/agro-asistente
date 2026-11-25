@@ -1,0 +1,468 @@
+{
+  "stamp": "20261125T035537Z",
+  "steps": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "service": "agro-asistente",
+        "phase": "3",
+        "architecture": "hexagonal",
+        "mysql": "connected"
+      },
+      "label": "health",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "health_phase3_mysql",
+      "ok": true,
+      "body": {
+        "status": "ok",
+        "service": "agro-asistente",
+        "phase": "3",
+        "architecture": "hexagonal",
+        "mysql": "connected"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/auth/login",
+      "status": 200,
+      "body": {
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJhZG1pbkBnbWFpbC5jb20iLCJyb2wiOiJBRE1JTklTVFJBRE9SIiwiZXhwIjoxNzk1NTg2MTM4fQ.yoDmBEMX7x44IsT5wWyzNVNlki_ilAdsBQ7tCWvYIBc",
+        "token_type": "bearer",
+        "role": "ADMINISTRADOR",
+        "name": "admin",
+        "email": "admin@gmail.com"
+      },
+      "label": "admin_login",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "admin_token_present",
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "body": {
+        "id": "3",
+        "names": "Agricultor",
+        "last_names": "PMV3 Validacion",
+        "email": "pmv3.farmer.20261125t035537z@test.local"
+      },
+      "label": "farmer_register",
+      "expected": 201,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "body": {
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZW1haWwiOiJwbXYzLmZhcm1lci4yMDI2MTEyNXQwMzU1Mzd6QHRlc3QubG9jYWwiLCJyb2wiOiJBR1JJQ1VMVE9SIiwiZXhwIjoxNzk1NTg2MTM4fQ.-O5k-a4ZJ5YckeZrwNPHp1crQ20B7uaUfZA2f2oBwlI",
+        "token_type": "bearer",
+        "farmer": {
+          "id": "3",
+          "names": "Agricultor",
+          "last_names": "PMV3 Validacion",
+          "email": "pmv3.farmer.20261125t035537z@test.local"
+        }
+      },
+      "label": "farmer_login",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "farmer_token_present",
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 401,
+      "body": {
+        "detail": "No autenticado"
+      },
+      "label": "hu14_no_token_docs",
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 403,
+      "body": {
+        "detail": "No tienes permisos para realizar esta acción"
+      },
+      "label": "hu14_farmer_docs",
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/metrics",
+      "status": 401,
+      "body": {
+        "detail": "No autenticado"
+      },
+      "label": "hu14_no_token_metrics",
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/metrics",
+      "status": 403,
+      "body": {
+        "detail": "No tienes permisos para realizar esta acción"
+      },
+      "label": "hu14_farmer_metrics",
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/evaluations",
+      "status": 401,
+      "body": {
+        "detail": "No autenticado"
+      },
+      "label": "hu14_no_token_evals",
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/evaluations",
+      "status": 403,
+      "body": {
+        "detail": "No tienes permisos para realizar esta acción"
+      },
+      "label": "hu14_farmer_evals",
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 200,
+      "body": [],
+      "label": "hu14_admin_docs",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/metrics?days=30",
+      "status": 200,
+      "body": {
+        "days": 30,
+        "total_requests": 0,
+        "queries_attended": 0,
+        "requests_with_error": 0,
+        "average_response_ms": 0.0,
+        "maximum_response_ms": 0
+      },
+      "label": "hu14_admin_metrics",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/documents",
+      "status": 201,
+      "body": {
+        "id": "1",
+        "title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z",
+        "topic": "quinua",
+        "status": "ACTIVO",
+        "version": 1,
+        "indexed_chunks": 1
+      },
+      "label": "hu13_create",
+      "expected": 201,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 200,
+      "body": [
+        {
+          "id": "1",
+          "title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z",
+          "topic": "quinua",
+          "source_path": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md",
+          "content_hash": "2ed9eef1584919737b8e1b5738f81782c63cf73d560430082df0d36b853a4310",
+          "status": "ACTIVO",
+          "version": 1,
+          "created_at": "2026-11-25 03:55:39",
+          "updated_at": "2026-11-24 22:55:38"
+        }
+      ],
+      "label": "hu13_list",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "hu13_document_registered",
+      "ok": true,
+      "doc_id": "1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/contexts",
+      "status": 201,
+      "body": {
+        "id": "1",
+        "farmer_id": "3",
+        "plot_name": "Parcela PMV3-VALID-20261125T035537Z",
+        "crop": "quinua",
+        "region": "Puno",
+        "notes": "Validacion PMV3",
+        "is_selected": false,
+        "created_at": "2026-11-25T03:55:39.068226"
+      },
+      "label": "farmer_create_context",
+      "expected": 201,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/contexts/1/select",
+      "status": 200,
+      "body": {
+        "id": "1",
+        "farmer_id": "3",
+        "plot_name": "Parcela PMV3-VALID-20261125T035537Z",
+        "crop": "quinua",
+        "region": "Puno",
+        "notes": "Validacion PMV3",
+        "is_selected": true,
+        "created_at": "2026-11-25T03:55:39"
+      },
+      "label": "farmer_select_context",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/queries",
+      "status": 503,
+      "body": {
+        "detail": "No se pudo generar la respuesta: el servicio de generación local no está disponible. Comprueba que Ollama esté en ejecución."
+      },
+      "label": "hu13_query_active_doc"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/documents/1",
+      "status": 200,
+      "body": {
+        "id": "1",
+        "title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+        "topic": "quinua",
+        "status": "ACTIVO",
+        "version": 2,
+        "indexed_chunks": 1
+      },
+      "label": "hu13_edit",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "hu13_version_increased",
+      "ok": true,
+      "version": 2
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/queries",
+      "status": 503,
+      "body": {
+        "detail": "No se pudo generar la respuesta: el servicio de generación local no está disponible. Comprueba que Ollama esté en ejecución."
+      },
+      "label": "hu13_query_after_edit"
+    },
+    {
+      "check": "hu13_reindexed_content_reachable",
+      "ok": false,
+      "status": 503
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/documents/1/status",
+      "status": 200,
+      "body": {
+        "documento_id": 1,
+        "estado": "INACTIVO",
+        "version": 2,
+        "fecha_actualizacion": "2026-11-24T22:56:49"
+      },
+      "label": "hu13_deactivate",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 200,
+      "body": [
+        {
+          "id": "1",
+          "title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+          "topic": "quinua",
+          "source_path": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md",
+          "content_hash": "0cec6d9e35b97ea6b2617ae85dab7788c0ba504459d3b901a7ada815993259d2",
+          "status": "INACTIVO",
+          "version": 2,
+          "created_at": "2026-11-25 03:55:39",
+          "updated_at": "2026-11-24 22:56:49"
+        }
+      ],
+      "label": "hu13_list_after_deactivate",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "hu13_inactive_remains_in_admin",
+      "ok": true,
+      "doc": {
+        "id": "1",
+        "title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+        "topic": "quinua",
+        "source_path": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md",
+        "content_hash": "0cec6d9e35b97ea6b2617ae85dab7788c0ba504459d3b901a7ada815993259d2",
+        "status": "INACTIVO",
+        "version": 2,
+        "created_at": "2026-11-25 03:55:39",
+        "updated_at": "2026-11-24 22:56:49"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/queries",
+      "status": 503,
+      "body": {
+        "detail": "No se pudo generar la respuesta: el servicio de generación local no está disponible. Comprueba que Ollama esté en ejecución."
+      },
+      "label": "hu13_query_inactive_doc"
+    },
+    {
+      "check": "hu13_inactive_not_in_retrieval_unique_marker",
+      "ok": true,
+      "mentions_unique": false,
+      "status": 503
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/documents/1/status",
+      "status": 200,
+      "body": {
+        "documento_id": 1,
+        "estado": "ACTIVO",
+        "version": 2,
+        "fecha_actualizacion": "2026-11-24T22:56:51"
+      },
+      "label": "hu13_reactivate",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/queries",
+      "status": 503,
+      "body": {
+        "detail": "No se pudo generar la respuesta: el servicio de generación local no está disponible. Comprueba que Ollama esté en ejecución."
+      },
+      "label": "hu13_query_after_reactivate"
+    },
+    {
+      "check": "hu13_reactivated_indexed_again",
+      "ok": false,
+      "unique_present": false,
+      "status": 503
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/metrics?days=1",
+      "status": 200,
+      "body": {
+        "days": 1,
+        "total_requests": 4,
+        "queries_attended": 0,
+        "requests_with_error": 4,
+        "average_response_ms": 18715.0,
+        "maximum_response_ms": 67862
+      },
+      "label": "hu15_metrics_day",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "hu15_metrics_shape",
+      "ok": true,
+      "body": {
+        "days": 1,
+        "total_requests": 4,
+        "queries_attended": 0,
+        "requests_with_error": 4,
+        "average_response_ms": 18715.0,
+        "maximum_response_ms": 67862
+      }
+    },
+    {
+      "check": "hu15_metrics_reflect_queries",
+      "ok": false,
+      "body": {
+        "days": 1,
+        "total_requests": 4,
+        "queries_attended": 0,
+        "requests_with_error": 4,
+        "average_response_ms": 18715.0,
+        "maximum_response_ms": 67862
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/evaluations",
+      "status": 200,
+      "body": [],
+      "label": "hu16_list_evaluations",
+      "expected": 200,
+      "ok": true
+    }
+  ],
+  "observations": [
+    {
+      "phase": "query_with_active_doc",
+      "status": 503,
+      "answer_preview": "",
+      "evidence_count": 0,
+      "keys": [
+        "detail"
+      ]
+    },
+    {
+      "phase": "query_with_inactive_doc",
+      "status": 503,
+      "unique_marker_present": false,
+      "body_preview": "{\"detail\": \"No se pudo generar la respuesta: el servicio de generación local no está disponible. Comprueba que Ollama esté en ejecución.\"}"
+    }
+  ],
+  "metrics": {
+    "days": 1,
+    "total_requests": 4,
+    "queries_attended": 0,
+    "requests_with_error": 4,
+    "average_response_ms": 18715.0,
+    "maximum_response_ms": 67862
+  },
+  "evaluations": []
+}

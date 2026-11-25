@@ -1,28 +1,32 @@
-# RESULTADOS PENDIENTES — línea base RAGAS PMV1
+# RESULTADOS RAGAS — estado PMV3
 
-**EVALUACIÓN PENDIENTE**
+## Corrida aceptada (2026-11-25)
 
-**NO HAY RESULTADOS TODAVÍA**
+Archivos locales (gitignored `*.json` en `results/`):
 
-No se generó ningún archivo de puntuaciones. No se inventaron métricas.
+- `pmv3-evaluation-v1_samples_20261125T054127Z.json`
+- `pmv3-evaluation-v1_scores_20261125T054127Z.json`
+- MySQL `evaluaciones_ia.id = 1` + detalles
 
-## Qué falta
+Juez: Ollama `qwen2.5:1.5b` · embeddings: `nomic-embed-text` · API: `ragas.metrics.collections`
 
-1. **Ollama en ejecución** (`ollama serve`) y el modelo de `OLLAMA_MODEL` instalado (`ollama pull qwen2.5:1.5b` o el tag de su laboratorio).
-2. **Índice Chroma** con la base de conocimiento. Si la colección está vacía, hay que indexar (`POST /api/v1/knowledge/index`), y eso **sí requiere MySQL** operativo con documentos ingeridos.
-3. Confirmar `GENERATION_PROVIDER=ollama` en `backend/.env`. El script **no** cae a plantilla.
-4. Juez RAGAS: por defecto el mismo Ollama (`/v1`). Si usa `RAGAS_LLM_PROVIDER=openai`, hace falta `OPENAI_API_KEY` en el entorno (nunca en git).
+Los proxies léxicos (`retrieval_precision_lexical_proxy`, `answer_pertinence_lexical_coverage`) **no** son validación agronómica.
 
-MySQL no es necesario para puntuar si Chroma ya tiene fragmentos. En este entorno de desarrollo MySQL ha fallado con `Access denied for user 'root'@'localhost'`; si el índice está vacío, hay que corregir credenciales y reindexar.
+## Corrida histórica incompleta (no aprobar)
+
+Ver `results/INCOMPLETE_20261125T051444Z.md` (`answer_relevancy=NaN`, fallo MySQL).
 
 ## Cómo ejecutar
 
 ```powershell
 cd backend
 .\.venv\Scripts\Activate.ps1
-# .env: GENERATION_PROVIDER=ollama
+# Requisitos: ollama pull qwen2.5:1.5b ; ollama pull nomic-embed-text
+$env:RAGAS_EMBEDDING_MODEL='nomic-embed-text'
 python -m evaluation.run_baseline
 ```
+
+Una corrida con métricas NaN/ausentes o sin persistencia MySQL termina con código 2 y **no** se considera exitosa.
 
 ## Variables
 
@@ -30,13 +34,7 @@ python -m evaluation.run_baseline
 |---|---|
 | `GENERATION_PROVIDER` | Debe ser `ollama` |
 | `OLLAMA_BASE_URL` | p. ej. `http://127.0.0.1:11434` |
-| `OLLAMA_MODEL` | Tag instalado (default documentado `qwen2.5:1.5b`) |
-| `OLLAMA_TIMEOUT_SECONDS` | Timeout de generación |
-| `CHROMA_PERSIST_DIR` / `CHROMA_COLLECTION` | Índice real del PMV1 |
+| `OLLAMA_MODEL` | Tag de chat (default `qwen2.5:1.5b`) |
+| `RAGAS_EMBEDDING_MODEL` | Embeddings del juez (`nomic-embed-text`) |
 | `RAGAS_LLM_PROVIDER` | `ollama` (defecto) u `openai` |
-| `RAGAS_EMBEDDING_MODEL` | Embeddings del juez (opcional) |
 | `OPENAI_API_KEY` | Solo si el juez es OpenAI |
-
-## Comando
-
-`python -m evaluation.run_baseline` desde `backend/`.

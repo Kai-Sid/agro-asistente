@@ -1,0 +1,672 @@
+{
+  "stamp": "20261125T051150Z",
+  "steps": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "service": "agro-asistente",
+        "phase": "3",
+        "architecture": "hexagonal",
+        "mysql": "connected"
+      },
+      "label": "health",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "health_phase3_mysql",
+      "ok": true,
+      "body": {
+        "status": "ok",
+        "service": "agro-asistente",
+        "phase": "3",
+        "architecture": "hexagonal",
+        "mysql": "connected"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/auth/login",
+      "status": 200,
+      "body": {
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJhZG1pbkBnbWFpbC5jb20iLCJyb2wiOiJBRE1JTklTVFJBRE9SIiwiZXhwIjoxNzk1NTkwNzExfQ.i7ImWHEPeFScpZEEsX0AhWn3aAXgu5uS7UAJ98YJXu4",
+        "token_type": "bearer",
+        "role": "ADMINISTRADOR",
+        "name": "admin",
+        "email": "admin@gmail.com"
+      },
+      "label": "admin_login",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "admin_token_present",
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "body": {
+        "id": "4",
+        "names": "Agricultor",
+        "last_names": "PMV3 Validacion",
+        "email": "pmv3.farmer.20261125t051150z@test.local"
+      },
+      "label": "farmer_register",
+      "expected": 201,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "body": {
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwiZW1haWwiOiJwbXYzLmZhcm1lci4yMDI2MTEyNXQwNTExNTB6QHRlc3QubG9jYWwiLCJyb2wiOiJBR1JJQ1VMVE9SIiwiZXhwIjoxNzk1NTkwNzExfQ.xMV8PjUdi9HvtFUByvdXo7yTLAJ0_5HvMljXSyJ0EVY",
+        "token_type": "bearer",
+        "farmer": {
+          "id": "4",
+          "names": "Agricultor",
+          "last_names": "PMV3 Validacion",
+          "email": "pmv3.farmer.20261125t051150z@test.local"
+        }
+      },
+      "label": "farmer_login",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "farmer_token_present",
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 401,
+      "body": {
+        "detail": "No autenticado"
+      },
+      "label": "hu14_no_token_docs",
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 403,
+      "body": {
+        "detail": "No tienes permisos para realizar esta acción"
+      },
+      "label": "hu14_farmer_docs",
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/metrics",
+      "status": 401,
+      "body": {
+        "detail": "No autenticado"
+      },
+      "label": "hu14_no_token_metrics",
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/metrics",
+      "status": 403,
+      "body": {
+        "detail": "No tienes permisos para realizar esta acción"
+      },
+      "label": "hu14_farmer_metrics",
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/evaluations",
+      "status": 401,
+      "body": {
+        "detail": "No autenticado"
+      },
+      "label": "hu14_no_token_evals",
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/evaluations",
+      "status": 403,
+      "body": {
+        "detail": "No tienes permisos para realizar esta acción"
+      },
+      "label": "hu14_farmer_evals",
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 200,
+      "body": [
+        {
+          "id": "1",
+          "title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+          "topic": "quinua",
+          "source_path": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md",
+          "content_hash": "0cec6d9e35b97ea6b2617ae85dab7788c0ba504459d3b901a7ada815993259d2",
+          "status": "ACTIVO",
+          "version": 2,
+          "created_at": "2026-11-25 03:55:39",
+          "updated_at": "2026-11-24 22:58:26"
+        }
+      ],
+      "label": "hu14_admin_docs",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/metrics?days=30",
+      "status": 200,
+      "body": {
+        "days": 30,
+        "total_requests": 5,
+        "queries_attended": 0,
+        "requests_with_error": 5,
+        "average_response_ms": 15440.2,
+        "maximum_response_ms": 67862
+      },
+      "label": "hu14_admin_metrics",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/documents",
+      "status": 201,
+      "body": {
+        "id": "2",
+        "title": "Guia Quinua Validacion PMV3-VALID-20261125T051150Z",
+        "topic": "quinua",
+        "status": "ACTIVO",
+        "version": 1,
+        "indexed_chunks": 2
+      },
+      "label": "hu13_create",
+      "expected": 201,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 200,
+      "body": [
+        {
+          "id": "2",
+          "title": "Guia Quinua Validacion PMV3-VALID-20261125T051150Z",
+          "topic": "quinua",
+          "source_path": "knowledge/3634a935-28af-418a-9602-4ac393383c8f.md",
+          "content_hash": "3032bcde1c64bdcdfdc1769086eb1711bc33a1b629c6902699c8edab3fa632b0",
+          "status": "ACTIVO",
+          "version": 1,
+          "created_at": "2026-11-25 05:11:52",
+          "updated_at": "2026-11-25 00:11:51"
+        },
+        {
+          "id": "1",
+          "title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+          "topic": "quinua",
+          "source_path": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md",
+          "content_hash": "0cec6d9e35b97ea6b2617ae85dab7788c0ba504459d3b901a7ada815993259d2",
+          "status": "ACTIVO",
+          "version": 2,
+          "created_at": "2026-11-25 03:55:39",
+          "updated_at": "2026-11-24 22:58:26"
+        }
+      ],
+      "label": "hu13_list",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "hu13_document_registered",
+      "ok": true,
+      "doc_id": "2"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/contexts",
+      "status": 201,
+      "body": {
+        "id": "2",
+        "farmer_id": "4",
+        "plot_name": "Parcela PMV3-VALID-20261125T051150Z",
+        "crop": "quinua",
+        "region": "Puno",
+        "notes": "Validacion PMV3",
+        "is_selected": false,
+        "created_at": "2026-11-25T05:11:51.836760"
+      },
+      "label": "farmer_create_context",
+      "expected": 201,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/contexts/2/select",
+      "status": 200,
+      "body": {
+        "id": "2",
+        "farmer_id": "4",
+        "plot_name": "Parcela PMV3-VALID-20261125T051150Z",
+        "crop": "quinua",
+        "region": "Puno",
+        "notes": "Validacion PMV3",
+        "is_selected": true,
+        "created_at": "2026-11-25T05:11:52"
+      },
+      "label": "farmer_select_context",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/queries",
+      "status": 201,
+      "body": {
+        "id": "1",
+        "text": "Como controlo mildiu en quinua andina segun la guia PMV3-VALID-20261125T051150Z?",
+        "answer": "Para controlar el mildiu en quinua andina en la región de Puno, sigue estos pasos según la guía PMV3-VALID-20261125T051150Z:\n\n1. Monitorea semanalmente el estado del mildiu en tu cultivo de quinua andina.\n2. Mantén un riego moderado durante la floración.\n3. Asegúrate de que el suelo sea de alta altura para evitar problemas de mildiu.\n4. Si sospechas de mildiu, realiza un diagnostico confirmado antes de aplicar extractos botánicos.\n5. Si decides aplicar extractos botánicos, solo lo hagas tras el diagnóstico confirmado y siguiendo las instrucciones específicas de la guía PMV3-VALID-20261125T051150Z.\n\nRecuerda que la guía PMV3-VALID-20261125T051150Z es la más reciente y actualizada, por lo que es la recomendación más precisa para tu región y cultivo.",
+        "generation_method": "ollama",
+        "created_at": "2026-11-25T05:11:51.859998",
+        "context": {
+          "id": "2",
+          "crop": "quinua",
+          "region": "Puno",
+          "plot_name": "Parcela PMV3-VALID-20261125T051150Z"
+        },
+        "evidences": [
+          {
+            "document_id": "2",
+            "document_title": "Guia Quinua Validacion PMV3-VALID-20261125T051150Z",
+            "chunk_id": "3032bcde1c64bdcdfdc1769086eb1711bc33a1b629c6902699c8edab3fa632b0:chunk:0000",
+            "excerpt": "Documento de validacion PMV3-VALID-20261125T051150Z. El cultivo de prueba quinua andina requiere riego moderado en floracion. Para controlar mildiu en quinua se recomienda monitoreo semanal y ventilacion del cultivo. La dosis orientativa de fertilizacion nitrogenada es baja en suelos fertiles de altura.",
+            "similarity_score": 0.48262,
+            "rank_order": 1,
+            "origin_reference": "knowledge/3634a935-28af-418a-9602-4ac393383c8f.md"
+          },
+          {
+            "document_id": "1",
+            "document_title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+            "chunk_id": "0cec6d9e35b97ea6b2617ae85dab7788c0ba504459d3b901a7ada815993259d2:chunk:0000",
+            "excerpt": "Documento de validacion PMV3-VALID-20261125T035537Z. El cultivo de prueba quinua andina requiere riego moderado en floracion. Para controlar mildiu en quinua se recomienda monitoreo semanal y ventilacion del cultivo. La dosis orientativa de fertilizacion nitrogenada es baja en suelos fertiles de altura. ACTUALIZACION: aplicar extractos botanicos solo tras diagnostico confirmado.",
+            "similarity_score": 0.47513,
+            "rank_order": 2,
+            "origin_reference": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md"
+          }
+        ],
+        "classification": {
+          "category": "enfermedades_cultivos",
+          "abstained": false,
+          "reason": null,
+          "margin": 0.29040009811599543,
+          "top_class": "enfermedades_cultivos",
+          "top_score": 0.4383323252019566,
+          "second_class": "riego",
+          "second_score": 0.14793222708596115,
+          "scores_are_calibrated": false,
+          "available": true,
+          "error": null
+        }
+      },
+      "label": "hu13_query_active_doc"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/documents/2",
+      "status": 200,
+      "body": {
+        "id": "2",
+        "title": "Guia Quinua Validacion PMV3-VALID-20261125T051150Z v2",
+        "topic": "quinua",
+        "status": "ACTIVO",
+        "version": 2,
+        "indexed_chunks": 2
+      },
+      "label": "hu13_edit",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "hu13_version_increased",
+      "ok": true,
+      "version": 2
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/queries",
+      "status": 201,
+      "body": {
+        "id": "2",
+        "text": "Que dice la actualizacion sobre extractos botanicos en quinua PMV3-VALID-20261125T051150Z?",
+        "answer": "Según la actualización PMV3-VALID-20261125T051150Z v2 y PMV3-VALID-20261125T035537Z v2, la guía de validación para el cultivo de quinua en Puno, se recomienda aplicar extractos botánicos solo tras un diagnóstico confirmado de mildiu en quinua. Esta recomendación se basa en la evidencia de que la aplicación de extractos botánicos debe ser efectuada después de que se haya identificado la presencia de mildiu en el cultivo, lo que indica que la enfermedad ya ha sido diagnosticada y controlada.",
+        "generation_method": "ollama",
+        "created_at": "2026-11-25T05:11:57.733423",
+        "context": {
+          "id": "2",
+          "crop": "quinua",
+          "region": "Puno",
+          "plot_name": "Parcela PMV3-VALID-20261125T051150Z"
+        },
+        "evidences": [
+          {
+            "document_id": "2",
+            "document_title": "Guia Quinua Validacion PMV3-VALID-20261125T051150Z v2",
+            "chunk_id": "e391d7245b9a5b71041796bb553fe287ee27ea0cbd1d085af72a34151aa1e7f4:chunk:0000",
+            "excerpt": "Documento de validacion PMV3-VALID-20261125T051150Z. El cultivo de prueba quinua andina requiere riego moderado en floracion. Para controlar mildiu en quinua se recomienda monitoreo semanal y ventilacion del cultivo. La dosis orientativa de fertilizacion nitrogenada es baja en suelos fertiles de altura. ACTUALIZACION: aplicar extractos botanicos solo tras diagnostico confirmado.",
+            "similarity_score": 0.49871,
+            "rank_order": 1,
+            "origin_reference": "knowledge/3634a935-28af-418a-9602-4ac393383c8f.md"
+          },
+          {
+            "document_id": "1",
+            "document_title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+            "chunk_id": "0cec6d9e35b97ea6b2617ae85dab7788c0ba504459d3b901a7ada815993259d2:chunk:0000",
+            "excerpt": "Documento de validacion PMV3-VALID-20261125T035537Z. El cultivo de prueba quinua andina requiere riego moderado en floracion. Para controlar mildiu en quinua se recomienda monitoreo semanal y ventilacion del cultivo. La dosis orientativa de fertilizacion nitrogenada es baja en suelos fertiles de altura. ACTUALIZACION: aplicar extractos botanicos solo tras diagnostico confirmado.",
+            "similarity_score": 0.44544,
+            "rank_order": 2,
+            "origin_reference": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md"
+          }
+        ],
+        "classification": {
+          "category": "sin categoría",
+          "abstained": true,
+          "reason": "margen_insuficiente",
+          "margin": 0.03298318191767563,
+          "top_class": "fertilizacion_nutricion",
+          "top_score": 0.1999462410692191,
+          "second_class": "cosecha_poscosecha",
+          "second_score": 0.16696305915154347,
+          "scores_are_calibrated": false,
+          "available": true,
+          "error": null
+        }
+      },
+      "label": "hu13_query_after_edit"
+    },
+    {
+      "check": "hu13_reindexed_content_reachable",
+      "ok": true,
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/documents/2/status",
+      "status": 200,
+      "body": {
+        "documento_id": 2,
+        "estado": "INACTIVO",
+        "version": 2,
+        "fecha_actualizacion": "2026-11-25T00:12:00"
+      },
+      "label": "hu13_deactivate",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/documents",
+      "status": 200,
+      "body": [
+        {
+          "id": "2",
+          "title": "Guia Quinua Validacion PMV3-VALID-20261125T051150Z v2",
+          "topic": "quinua",
+          "source_path": "knowledge/3634a935-28af-418a-9602-4ac393383c8f.md",
+          "content_hash": "e391d7245b9a5b71041796bb553fe287ee27ea0cbd1d085af72a34151aa1e7f4",
+          "status": "INACTIVO",
+          "version": 2,
+          "created_at": "2026-11-25 05:11:52",
+          "updated_at": "2026-11-25 00:12:00"
+        },
+        {
+          "id": "1",
+          "title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+          "topic": "quinua",
+          "source_path": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md",
+          "content_hash": "0cec6d9e35b97ea6b2617ae85dab7788c0ba504459d3b901a7ada815993259d2",
+          "status": "ACTIVO",
+          "version": 2,
+          "created_at": "2026-11-25 03:55:39",
+          "updated_at": "2026-11-24 22:58:26"
+        }
+      ],
+      "label": "hu13_list_after_deactivate",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "hu13_inactive_remains_in_admin",
+      "ok": true,
+      "doc": {
+        "id": "2",
+        "title": "Guia Quinua Validacion PMV3-VALID-20261125T051150Z v2",
+        "topic": "quinua",
+        "source_path": "knowledge/3634a935-28af-418a-9602-4ac393383c8f.md",
+        "content_hash": "e391d7245b9a5b71041796bb553fe287ee27ea0cbd1d085af72a34151aa1e7f4",
+        "status": "INACTIVO",
+        "version": 2,
+        "created_at": "2026-11-25 05:11:52",
+        "updated_at": "2026-11-25 00:12:00"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/queries",
+      "status": 201,
+      "body": {
+        "id": "3",
+        "text": "Recupera fragmentos exclusivos de la guia PMV3-VALID-20261125T051150Z sobre mildiu en quinua",
+        "answer": "Para controlar el mildiu en quinua, es recomendable realizar un monitoreo semanal del cultivo. Este control debe ser realizado en la floración, momento en el que el mildiu puede ser más pronunciado. Además, se debe considerar la ventilación del cultivo para disminuir la presencia del mildiu. En cuanto a la dosis de fertilización nitrogenada, se recomienda una baja en suelos fertiles de altitud, ya que la mayoría de los suelos en la región de Puno son de bajo contenido de nitrógeno. Por lo tanto, la aplicación de extractos botánicos debe ser realizada solo tras un diagnóstico confirmado del mildiu.",
+        "generation_method": "ollama",
+        "created_at": "2026-11-25T05:12:00.607393",
+        "context": {
+          "id": "2",
+          "crop": "quinua",
+          "region": "Puno",
+          "plot_name": "Parcela PMV3-VALID-20261125T051150Z"
+        },
+        "evidences": [
+          {
+            "document_id": "1",
+            "document_title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+            "chunk_id": "0cec6d9e35b97ea6b2617ae85dab7788c0ba504459d3b901a7ada815993259d2:chunk:0000",
+            "excerpt": "Documento de validacion PMV3-VALID-20261125T035537Z. El cultivo de prueba quinua andina requiere riego moderado en floracion. Para controlar mildiu en quinua se recomienda monitoreo semanal y ventilacion del cultivo. La dosis orientativa de fertilizacion nitrogenada es baja en suelos fertiles de altura. ACTUALIZACION: aplicar extractos botanicos solo tras diagnostico confirmado.",
+            "similarity_score": 0.52388,
+            "rank_order": 1,
+            "origin_reference": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md"
+          }
+        ],
+        "classification": {
+          "category": "enfermedades_cultivos",
+          "abstained": false,
+          "reason": null,
+          "margin": 0.2881735449326222,
+          "top_class": "enfermedades_cultivos",
+          "top_score": 0.40731374230039913,
+          "second_class": "fertilizacion_nutricion",
+          "second_score": 0.11914019736777694,
+          "scores_are_calibrated": false,
+          "available": true,
+          "error": null
+        }
+      },
+      "label": "hu13_query_inactive_doc"
+    },
+    {
+      "check": "hu13_inactive_not_in_retrieval_unique_marker",
+      "ok": false,
+      "mentions_unique": true,
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/documents/2/status",
+      "status": 200,
+      "body": {
+        "documento_id": 2,
+        "estado": "ACTIVO",
+        "version": 2,
+        "fecha_actualizacion": "2026-11-25T00:12:02"
+      },
+      "label": "hu13_reactivate",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/queries",
+      "status": 201,
+      "body": {
+        "id": "4",
+        "text": "Segun la guia PMV3-VALID-20261125T051150Z, que riego necesita la quinua en floracion?",
+        "answer": "Según la guía PMV3-VALID-20261125T051150Z, la quinua requiere riego moderado en floración. Para controlar el mildiu en quinua, se recomienda monitorear el cultivo semanalmente y realizar la ventilación del suelo. La dosis orientativa de fertilización nitrogenada es baja en suelos fertiles de altitud. Por lo tanto, la respuesta a la pregunta es:\n\nLa quinua necesita riego moderado en floración. Para controlar el mildiu, se recomienda monitorear el cultivo semanalmente y realizar la ventilación del suelo. La dosis orientativa de fertilización nitrogenada es baja en suelos fertiles de altitud.",
+        "generation_method": "ollama",
+        "created_at": "2026-11-25T05:12:03.057621",
+        "context": {
+          "id": "2",
+          "crop": "quinua",
+          "region": "Puno",
+          "plot_name": "Parcela PMV3-VALID-20261125T051150Z"
+        },
+        "evidences": [
+          {
+            "document_id": "2",
+            "document_title": "Guia Quinua Validacion PMV3-VALID-20261125T051150Z v2",
+            "chunk_id": "e391d7245b9a5b71041796bb553fe287ee27ea0cbd1d085af72a34151aa1e7f4:chunk:0000",
+            "excerpt": "Documento de validacion PMV3-VALID-20261125T051150Z. El cultivo de prueba quinua andina requiere riego moderado en floracion. Para controlar mildiu en quinua se recomienda monitoreo semanal y ventilacion del cultivo. La dosis orientativa de fertilizacion nitrogenada es baja en suelos fertiles de altura. ACTUALIZACION: aplicar extractos botanicos solo tras diagnostico confirmado.",
+            "similarity_score": 0.4818,
+            "rank_order": 1,
+            "origin_reference": "knowledge/3634a935-28af-418a-9602-4ac393383c8f.md"
+          },
+          {
+            "document_id": "1",
+            "document_title": "Guia Quinua Validacion PMV3-VALID-20261125T035537Z v2",
+            "chunk_id": "0cec6d9e35b97ea6b2617ae85dab7788c0ba504459d3b901a7ada815993259d2:chunk:0000",
+            "excerpt": "Documento de validacion PMV3-VALID-20261125T035537Z. El cultivo de prueba quinua andina requiere riego moderado en floracion. Para controlar mildiu en quinua se recomienda monitoreo semanal y ventilacion del cultivo. La dosis orientativa de fertilizacion nitrogenada es baja en suelos fertiles de altura. ACTUALIZACION: aplicar extractos botanicos solo tras diagnostico confirmado.",
+            "similarity_score": 0.45902,
+            "rank_order": 2,
+            "origin_reference": "knowledge/3470c134-110f-4344-bbfd-286ae5050623.md"
+          }
+        ],
+        "classification": {
+          "category": "riego",
+          "abstained": false,
+          "reason": null,
+          "margin": 0.49447842486174065,
+          "top_class": "riego",
+          "top_score": 0.6092246571948262,
+          "second_class": "fertilizacion_nutricion",
+          "second_score": 0.11474623233308556,
+          "scores_are_calibrated": false,
+          "available": true,
+          "error": null
+        }
+      },
+      "label": "hu13_query_after_reactivate"
+    },
+    {
+      "check": "hu13_reactivated_indexed_again",
+      "ok": true,
+      "unique_present": true,
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/metrics?days=1",
+      "status": 200,
+      "body": {
+        "days": 1,
+        "total_requests": 9,
+        "queries_attended": 4,
+        "requests_with_error": 5,
+        "average_response_ms": 10106.56,
+        "maximum_response_ms": 67862
+      },
+      "label": "hu15_metrics_day",
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "check": "hu15_metrics_shape",
+      "ok": true,
+      "body": {
+        "days": 1,
+        "total_requests": 9,
+        "queries_attended": 4,
+        "requests_with_error": 5,
+        "average_response_ms": 10106.56,
+        "maximum_response_ms": 67862
+      }
+    },
+    {
+      "check": "hu15_metrics_reflect_queries",
+      "ok": true,
+      "body": {
+        "days": 1,
+        "total_requests": 9,
+        "queries_attended": 4,
+        "requests_with_error": 5,
+        "average_response_ms": 10106.56,
+        "maximum_response_ms": 67862
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/evaluations",
+      "status": 200,
+      "body": [],
+      "label": "hu16_list_evaluations",
+      "expected": 200,
+      "ok": true
+    }
+  ],
+  "observations": [
+    {
+      "phase": "query_with_active_doc",
+      "status": 201,
+      "answer_preview": "Para controlar el mildiu en quinua andina en la región de Puno, sigue estos pasos según la guía PMV3-VALID-20261125T051150Z:\n\n1. Monitorea semanalmente el estado del mildiu en tu cultivo de quinua andina.\n2. Mantén un riego moderado durante la floración.\n3. Asegúrate de que el suelo sea de alta altura para evitar problemas de mildiu.\n4. Si sospechas de mildiu, realiza un diagnostico confirmado antes de aplicar extractos botánicos.\n5. Si decides aplicar extractos botánicos, solo lo hagas tras el ",
+      "evidence_count": 2,
+      "keys": [
+        "id",
+        "text",
+        "answer",
+        "generation_method",
+        "created_at",
+        "context",
+        "evidences",
+        "classification"
+      ]
+    },
+    {
+      "phase": "query_with_inactive_doc",
+      "status": 201,
+      "unique_marker_present": true,
+      "body_preview": "{\"id\": \"3\", \"text\": \"Recupera fragmentos exclusivos de la guia PMV3-VALID-20261125T051150Z sobre mildiu en quinua\", \"answer\": \"Para controlar el mildiu en quinua, es recomendable realizar un monitoreo semanal del cultivo. Este control debe ser realizado en la floración, momento en el que el mildiu puede ser más pronunciado. Además, se debe considerar la ventilación del cultivo para disminuir la presencia del mildiu. En cuanto a la dosis de fertilización nitrogenada, se recomienda una baja en suelos fertiles de altitud, ya que la mayoría de los suelos en la región de Puno son de bajo contenido de nitrógeno. Por lo tanto, la aplicación de extractos botánicos debe ser realizada solo tras un diagnóstico confirmado del mildiu.\", \"generation_method\": \"ollama\", \"created_at\": \"2026-11-25T05:12:00."
+    }
+  ],
+  "metrics": {
+    "days": 1,
+    "total_requests": 9,
+    "queries_attended": 4,
+    "requests_with_error": 5,
+    "average_response_ms": 10106.56,
+    "maximum_response_ms": 67862
+  },
+  "evaluations": []
+}

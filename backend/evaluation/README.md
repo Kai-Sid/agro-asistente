@@ -18,21 +18,31 @@ Archivo: `evaluation/data/pmv1_baseline.json`
 
 No se inventó agronomía fuera de esos Markdown.
 
-## Métricas (ragas 0.4.3)
+## Métricas (ragas 0.4.3, API moderna `collections`)
 
-| Dimensión | Clase RAGAS |
-|---|---|
-| Fidelidad de la respuesta al contexto | `Faithfulness` |
-| Calidad de recuperación | `LLMContextRecall` |
-| Relevancia de la respuesta | `ResponseRelevancy` |
+| Dimensión | Clase RAGAS | Clave en scores |
+|---|---|---|
+| Fidelidad de la respuesta al contexto | `Faithfulness` | `faithfulness` |
+| Calidad de recuperación | `ContextRecall` | `context_recall` |
+| Relevancia de la respuesta | `AnswerRelevancy` | `answer_relevancy` |
 
-El juez por defecto es el mismo Ollama (`OLLAMA_BASE_URL/v1`). Alternativa: `RAGAS_LLM_PROVIDER=openai` + `OPENAI_API_KEY` (nunca en el repositorio).
+Se usa únicamente la API moderna (`ragas.metrics.collections` + `embedding_factory`/`llm_factory` con cliente async). No se mezclan wrappers legacy.
+
+El juez por defecto es Ollama (`OLLAMA_BASE_URL/v1`). `AnswerRelevancy` necesita un modelo de **embeddings** aparte (`RAGAS_EMBEDDING_MODEL=nomic-embed-text`). No usar `qwen2.5:1.5b` como embedding.
+
+```powershell
+ollama pull nomic-embed-text
+```
+
+Alternativa de juez: `RAGAS_LLM_PROVIDER=openai` + `OPENAI_API_KEY` (nunca en el repositorio).
+
+Una corrida con métricas ausentes/NaN o sin persistencia MySQL **no** se considera exitosa (exit code 2).
 
 ## Requisitos para la corrida oficial
 
 1. `pip install -r requirements.txt` (incluye `ragas==0.4.3`)
 2. `GENERATION_PROVIDER=ollama` (si vale `template`, el script **se detiene**)
-3. Ollama en ejecución y `ollama pull` del tag en `OLLAMA_MODEL`
+3. Ollama en ejecución, `ollama pull` del tag en `OLLAMA_MODEL` y `ollama pull nomic-embed-text`
 4. Colección Chroma `agro_knowledge_pmv1` **con documentos indexados**
 5. Ejecutar desde `backend/`
 
