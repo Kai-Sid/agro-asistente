@@ -67,7 +67,7 @@ Esas pruebas no leen `prueba.jsonl`.
 2. Arrancar el backend como el resto del PMV1, desde `backend`:
 
 ```text
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8010
 ```
 
 3. Iniciar sesión y enviar `POST /api/v1/riesgo`.

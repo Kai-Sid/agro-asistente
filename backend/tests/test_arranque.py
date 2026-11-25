@@ -8,9 +8,9 @@ def test_produccion_escucha_en_todas_las_interfaces() -> None:
 
 
 def test_puerto_usa_port_o_el_predeterminado_local() -> None:
-    assert puerto_de_escucha({}) == 8000
+    assert puerto_de_escucha({}) == 8010
     assert puerto_de_escucha({"PORT": "10000"}) == 10000
-    assert puerto_de_escucha({"PORT": "  "}) == 8000
+    assert puerto_de_escucha({"PORT": "  "}) == 8010
 
 
 def test_puerto_invalido_se_rechaza() -> None:

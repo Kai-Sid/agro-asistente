@@ -74,9 +74,9 @@ def host_de_escucha() -> str:
 
 
 def puerto_de_escucha(environ: dict[str, str] | None = None) -> int:
-    """Usa PORT y, si no existe, el 8000 del entorno local."""
+    """Usa PORT y, si no existe, el 8010 del entorno local."""
     env = environ if environ is not None else os.environ
-    bruto = str(env.get("PORT", "")).strip() or "8000"
+    bruto = str(env.get("PORT", "")).strip() or "8010"
     try:
         puerto = int(bruto)
     except ValueError as error:

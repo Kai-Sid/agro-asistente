@@ -169,14 +169,14 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8010
 
 # Frontend (desde frontend/)
 npm install
 npm run dev
 ```
 
-Comprobar salud del backend: [http://localhost:8000/health](http://localhost:8000/health)
+Comprobar salud del backend: [http://localhost:8010/health](http://localhost:8010/health)
 
 ## Arquitectura
 

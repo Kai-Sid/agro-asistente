@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     app_name: str = "agro-asistente"
     app_env: str = "development"
     api_host: str = "127.0.0.1"
-    api_port: int = 8000
+    api_port: int = 8010
 
     mysql_host: str = "localhost"
     mysql_port: int = 3306

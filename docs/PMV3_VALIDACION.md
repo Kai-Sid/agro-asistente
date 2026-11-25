@@ -1,7 +1,7 @@
 # Validación ejecutable PMV3
 
 Fecha de actualización: 2026-11-25 (incluye HU-17 simulada)  
-Entorno: Laragon local · API `http://127.0.0.1:8000` · Ollama `127.0.0.1:11434`  
+Entorno: Laragon local · API `http://127.0.0.1:8010` · Ollama `127.0.0.1:11434`  
 Evidencia: `docs/evidencia_pmv3/` · Resultados RAGAS: `backend/evaluation/results/`
 
 ## Cierre técnico

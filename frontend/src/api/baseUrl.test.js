@@ -20,7 +20,7 @@ test("el cliente y el proxy local no fijan el backend de producción", () => {
   const cliente = readFileSync(new URL("./client.js", import.meta.url), "utf8");
   const vite = readFileSync(new URL("../../vite.config.js", import.meta.url), "utf8");
   assert.match(cliente, /urlBaseApi\(import\.meta\.env\)/);
-  assert.doesNotMatch(cliente, /127\.0\.0\.1:8000/);
+  assert.doesNotMatch(cliente, /127\.0\.0\.1:8010/);
   assert.match(vite, /\/health/);
-  assert.match(vite, /127\.0\.0\.1:8000/);
+  assert.match(vite, /127\.0\.0\.1:8010/);
 });

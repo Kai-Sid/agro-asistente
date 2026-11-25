@@ -29,13 +29,13 @@ Editar `.env` con las credenciales locales de MySQL. **Nunca** colocar API keys 
 Levantar el API:
 
 ```powershell
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8010
 ```
 
 Comprobar:
 
 ```powershell
-curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8010/health
 ```
 
 Respuesta esperada:
@@ -129,7 +129,7 @@ pytest
 Con el backend en marcha:
 
 ```powershell
-curl -X POST http://127.0.0.1:8000/api/v1/auth/register `
+curl -X POST http://127.0.0.1:8010/api/v1/auth/register `
   -H "Content-Type: application/json" `
   -d "{\"names\":\"Juan\",\"last_names\":\"Pérez\",\"email\":\"juan@example.com\",\"password\":\"Password123!\"}"
 ```
@@ -147,7 +147,7 @@ En la tabla `farmers`, `password_hash` debe comenzar por `$2` (bcrypt).
 ## 7. Probar HU-02 (inicio de sesión)
 
 ```powershell
-curl -X POST http://127.0.0.1:8000/api/v1/auth/login `
+curl -X POST http://127.0.0.1:8010/api/v1/auth/login `
   -H "Content-Type: application/json" `
   -d "{\"email\":\"juan@example.com\",\"password\":\"Password123!\"}"
 ```
@@ -171,14 +171,14 @@ Configuración JWT en `backend/.env`:
 Con un token de login:
 
 ```powershell
-curl -X POST http://127.0.0.1:8000/api/v1/contexts `
+curl -X POST http://127.0.0.1:8010/api/v1/contexts `
   -H "Authorization: Bearer TOKEN" `
   -H "Content-Type: application/json" `
   -d "{\"plot_name\":\"Parcela 1\",\"crop\":\"papa\",\"region\":\"Huancayo\",\"notes\":\"Campana seca\"}"
 
-curl http://127.0.0.1:8000/api/v1/contexts -H "Authorization: Bearer TOKEN"
+curl http://127.0.0.1:8010/api/v1/contexts -H "Authorization: Bearer TOKEN"
 
-curl -X POST http://127.0.0.1:8000/api/v1/contexts/ID/select -H "Authorization: Bearer TOKEN"
+curl -X POST http://127.0.0.1:8010/api/v1/contexts/ID/select -H "Authorization: Bearer TOKEN"
 ```
 
 Sin token o con JWT inválido/expirado: HTTP 401. Un agricultor no puede listar ni seleccionar contextos de otro: el listado queda filtrado y la selección ajena responde HTTP 404.
@@ -190,7 +190,7 @@ Pantalla: [http://localhost:5173/context](http://localhost:5173/context)
 Requisitos: agricultor autenticado y un contexto agrícola seleccionado.
 
 ```powershell
-curl -X POST http://127.0.0.1:8000/api/v1/queries `
+curl -X POST http://127.0.0.1:8010/api/v1/queries `
   -H "Authorization: Bearer TOKEN" `
   -H "Content-Type: application/json" `
   -d "{\"text\":\"¿Qué puedo hacer para mejorar el cultivo de papa?\"}"
@@ -209,12 +209,12 @@ Pantalla: [http://localhost:5173/query](http://localhost:5173/query)
 Con un token de login:
 
 ```powershell
-curl -X POST http://127.0.0.1:8000/api/v1/knowledge/ingest `
+curl -X POST http://127.0.0.1:8010/api/v1/knowledge/ingest `
   -H "Authorization: Bearer TOKEN" `
   -H "Content-Type: application/json" `
   -d "{\"title\":\"Riego de papa\",\"topic\":\"papa\",\"content\":\"# Material de prueba HU-05\\nRiego frecuente en floración.\"}"
 
-curl http://127.0.0.1:8000/api/v1/knowledge/documents -H "Authorization: Bearer TOKEN"
+curl http://127.0.0.1:8010/api/v1/knowledge/documents -H "Authorization: Bearer TOKEN"
 ```
 
 Respuesta esperada de ingesta: HTTP 201 con `id`, `title`, `topic`, `source_path`, `content_hash`, `chunk_count: 0`, `status: registered`.
@@ -233,7 +233,7 @@ Requisitos: agricultor autenticado, contexto seleccionado y al menos un document
 2. Indexarlo en Chroma:
 
 ```powershell
-curl -X POST http://127.0.0.1:8000/api/v1/knowledge/index `
+curl -X POST http://127.0.0.1:8010/api/v1/knowledge/index `
   -H "Authorization: Bearer TOKEN"
 ```
 
@@ -242,7 +242,7 @@ Respuesta esperada: HTTP 200 con `indexed_documents`, `total_chunks`, `collectio
 3. Consultar con un texto relacionado:
 
 ```powershell
-curl -X POST http://127.0.0.1:8000/api/v1/queries `
+curl -X POST http://127.0.0.1:8010/api/v1/queries `
   -H "Authorization: Bearer TOKEN" `
   -H "Content-Type: application/json" `
   -d "{\"text\":\"¿Cómo riego la papa en floración?\"}"
@@ -319,6 +319,6 @@ Configuración relevante de HU-06:
 
 | Servicio | URL |
 |---|---|
-| Backend FastAPI | http://127.0.0.1:8000 |
-| Documentación OpenAPI | http://127.0.0.1:8000/docs |
+| Backend FastAPI | http://127.0.0.1:8010 |
+| Documentación OpenAPI | http://127.0.0.1:8010/docs |
 | Frontend Vite | http://localhost:5173 |
