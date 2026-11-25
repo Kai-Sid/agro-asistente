@@ -111,7 +111,7 @@ class CompositionRoot:
             secret=self.settings.jwt_secret,
             algorithm=self.settings.jwt_algorithm,
         )
-        session_factory = create_session_factory(self.settings)
+        self.session_factory = create_session_factory(self.settings)\n        session_factory = self.session_factory
         self.puerto_repositorio_agricultor: PuertoRepositorioAgricultor = (
             RepositorioAgricultorMysql(session_factory)
         )
