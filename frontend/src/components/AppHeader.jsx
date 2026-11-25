@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { clearSession } from "../api/client";
+import { clearSession, getSessionRole } from "../api/client";
 import BrandMark from "./BrandMark.jsx";
 
 export default function AppHeader() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const isAdmin = getSessionRole() === "ADMINISTRADOR";
 
   function handleLogout() {
     clearSession();
-    navigate("/login", { replace: true });
+    navigate(isAdmin ? "/admin/login" : "/login", { replace: true });
   }
 
   function closeMenu() {
@@ -19,7 +20,7 @@ export default function AppHeader() {
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <NavLink to="/dashboard" className="brand-link" onClick={closeMenu}>
+        <NavLink to={isAdmin ? "/admin" : "/dashboard"} className="brand-link" onClick={closeMenu}>
           <BrandMark />
         </NavLink>
         <button
@@ -31,22 +32,21 @@ export default function AppHeader() {
         >
           Menú
         </button>
-        <nav id="app-navigation" className={`site-nav ${open ? "is-open" : ""}`}>
-          <NavLink to="/dashboard" onClick={closeMenu}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/context" onClick={closeMenu}>
-            Contexto
-          </NavLink>
-          <NavLink to="/query" onClick={closeMenu}>
-            Consulta
-          </NavLink>
-          <NavLink to="/knowledge" onClick={closeMenu}>
-            Base de conocimiento
-          </NavLink>
-          <NavLink to="/riesgo" onClick={closeMenu}>
-            Riesgo experimental
-          </NavLink>
+        <nav id="app-navigation" className={`site-nav ${open ? "is-open" : ""}`} aria-label="Navegación principal">
+          {isAdmin ? (
+            <>
+              <NavLink to="/admin" onClick={closeMenu}>Panel</NavLink>
+              <NavLink to="/admin/documents" onClick={closeMenu}>Documentos</NavLink>
+              <NavLink to="/admin/metrics" onClick={closeMenu}>Indicadores</NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink to="/dashboard" onClick={closeMenu}>Panel</NavLink>
+              <NavLink to="/context" onClick={closeMenu}>Contexto agrícola</NavLink>
+              <NavLink to="/query" onClick={closeMenu}>Consulta</NavLink>
+              <NavLink to="/riesgo" onClick={closeMenu}>Riesgo experimental</NavLink>
+            </>
+          )}
           <button type="button" className="logout-button logout-button-header" onClick={handleLogout}>
             Cerrar sesión
           </button>
