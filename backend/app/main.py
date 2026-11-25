@@ -24,8 +24,8 @@ container = build_container()
 
 app = FastAPI(
     title=container.settings.app_name,
-    version="0.1.0",
-    description="PMV1 - Sistema de asistencia técnica agrícola basado en IA",
+    version="0.3.0",
+    description="PMV3 - Asistencia técnica agrícola con administración y evaluación",
 )
 
 
