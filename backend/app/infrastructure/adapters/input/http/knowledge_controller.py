@@ -14,6 +14,7 @@ from app.domain.ports.input.incorporar_conocimiento_port import (
 )
 from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
     dependencia_administrador_autenticado,
+    dependencia_agricultor_autenticado,
 )
 from app.infrastructure.composition import CompositionRoot
 
@@ -58,6 +59,7 @@ def _documento_response(resultado: ResultadoDocumentoConocimiento) -> KnowledgeD
 def create_knowledge_router(container: CompositionRoot) -> APIRouter:
     router = APIRouter(prefix="/api/v1/knowledge", tags=["knowledge"])
     require_authenticated_admin = dependencia_administrador_autenticado(container)
+    require_authenticated_farmer = dependencia_agricultor_autenticado(container)
 
     @router.post(
         "/ingest",
@@ -94,7 +96,7 @@ def create_knowledge_router(container: CompositionRoot) -> APIRouter:
 
     @router.post("/index", response_model=IndexKnowledgeResponse)
     def index_knowledge(
-        _farmer_id: str = Depends(require_authenticated_farmer),
+        _admin_id: str = Depends(require_authenticated_admin),
     ) -> IndexKnowledgeResponse:
         try:
             result = container.puerto_indexar_conocimiento.ejecutar()
