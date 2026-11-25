@@ -1,8 +1,11 @@
 import os
+import time
+from uuid import uuid4
 
 from fastapi import FastAPI
 
 from app.infrastructure.config.cors import registrar_cors
+from app.infrastructure.adapters.output.mysql.procedures import MysqlStoredProcedureGateway
 
 from app.infrastructure.adapters.input.http.auth_controller import create_auth_router
 from app.infrastructure.adapters.input.http.admin_controller import create_admin_router
@@ -24,6 +27,33 @@ app = FastAPI(
     version="0.1.0",
     description="PMV1 - Sistema de asistencia técnica agrícola basado en IA",
 )
+
+
+metric_gateway = MysqlStoredProcedureGateway(container.session_factory)
+
+
+@app.middleware("http")
+async def registrar_metrica_consulta(request, call_next):
+    if request.method != "POST" or request.url.path != "/api/v1/queries":
+        return await call_next(request)
+    request_id = str(uuid4())
+    inicio = time.perf_counter()
+    codigo = 500
+    try:
+        response = await call_next(request)
+        codigo = response.status_code
+        return response
+    finally:
+        duracion_ms = max(0, int((time.perf_counter() - inicio) * 1000))
+        try:
+            metric_gateway.call(
+                "sp_metrica_consulta_guardar",
+                (request_id, codigo, duracion_ms),
+            )
+        except Exception:
+            # La métrica no debe interrumpir una consulta agrícola.
+            pass
+
 
 registrar_cors(app, container.settings)
 
