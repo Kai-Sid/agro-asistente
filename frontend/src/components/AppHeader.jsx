@@ -37,7 +37,8 @@ export default function AppHeader() {
             <>
               <NavLink to="/admin" onClick={closeMenu}>Panel</NavLink>
               <NavLink to="/admin/documents" onClick={closeMenu}>Documentos</NavLink>
-              <NavLink to="/admin/metrics" onClick={closeMenu}>Indicadores</NavLink>\n              <NavLink to="/admin/evaluations" onClick={closeMenu}>Evaluación IA</NavLink>
+              <NavLink to="/admin/metrics" onClick={closeMenu}>Indicadores</NavLink>
+              <NavLink to="/admin/evaluations" onClick={closeMenu}>Evaluación IA</NavLink>
             </>
           ) : (
             <>
