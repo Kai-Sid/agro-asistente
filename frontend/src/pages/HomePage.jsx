@@ -38,7 +38,7 @@ export default function HomePage() {
           <Link className="button button-secondary" to="/register">Crear cuenta</Link>
         </div>
 
-        <div className={`status tech-status ${error ? "status-error" : "status-ok"}`}>
+        <p className="nav-link admin-entry"><Link to="/admin/login">Acceso administrativo</Link></p>\n\n        <div className={`status tech-status ${error ? "status-error" : "status-ok"}`}>
           {loading && <p>Comprobando GET /health…</p>}
           {!loading && error && <p>{error}</p>}
           {!loading && health && (
