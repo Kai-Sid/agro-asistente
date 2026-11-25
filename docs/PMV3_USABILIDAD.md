@@ -12,9 +12,9 @@ Comprobar, mediante recorridos instrumentados en el navegador del entorno local,
 
 ## Preparación
 
-- Versión/rama: `codex/pmv3-stored-procedures-readiness` (cambios locales sin commit)
+- Versión/rama: `codex/pmv3-stored-procedures-readiness` (evidencia publicada en la rama)
 - Fecha: 2026-11-25
-- Entorno: Laragon · API `127.0.0.1:8010` · Vite `127.0.0.1:5173` · Ollama activo (`qwen2.5:1.5b`)
+- Entorno: Laragon · API local de la prueba `127.0.0.1:8010` (predeterminado versionado del backend: `8000`) · Vite `127.0.0.1:5173` · Ollama activo (`qwen2.5:1.5b`)
 - Herramienta: navegador integrado Cursor (inspección + interacción; no hay suite Playwright/Cypress del repo)
 - Facilitador: agente de validación técnica
 - Perfiles: `SIM-01`, `SIM-02`, `SIM-03` (cuentas sintéticas `*.pmv3.usabilidad@test.local`)

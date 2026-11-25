@@ -12,7 +12,8 @@ REGEX_DESPLIEGUE_PAGES = r"^https://[A-Za-z0-9-]+\.agro-asistente\.pages\.dev$"
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # `.env.local` (no versionado) puede sobrescribir el puerto u otras opciones locales.
+        env_file=(".env", ".env.local"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
     app_name: str = "agro-asistente"
     app_env: str = "development"
     api_host: str = "127.0.0.1"
-    api_port: int = 8010
+    api_port: int = 8000
 
     mysql_host: str = "localhost"
     mysql_port: int = 3306

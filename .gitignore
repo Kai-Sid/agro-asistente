@@ -11,10 +11,13 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 
-# Secrets and local env
+# Secrets and local env (puerto local, JWT, MySQL, etc.)
 .env
 .env.local
 .env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
 *.pem
 
 # Node / frontend

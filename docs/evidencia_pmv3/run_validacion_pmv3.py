@@ -1,57 +1,171 @@
 """Validacion ejecutable PMV3: genera evidencia API en JSON."""
 from __future__ import annotations
 
+import argparse
+import copy
 import json
+import os
+import secrets
+import string
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
-BASE = "http://127.0.0.1:8010"
+from dotenv import load_dotenv
+
+DEFAULT_BASE_URL = "http://127.0.0.1:8000"
+ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost"})
 OUT = Path(__file__).resolve().parent
-stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-evidence: dict = {"stamp": stamp, "steps": [], "observations": []}
+REPO_ROOT = OUT.parents[1]
+BACKEND_DIR = REPO_ROOT / "backend"
+ADMIN_PASSWORD_ENV = "PMV3_ADMIN_PASSWORD"
+ADMIN_EMAIL_ENV = "PMV3_ADMIN_EMAIL"
+DEFAULT_ADMIN_EMAIL = "admin@gmail.com"
+
+REDACT_KEYS = {
+    "access_token",
+    "refresh_token",
+    "authorization",
+    "password",
+    "mysql_password",
+    "jwt_secret",
+    "api_key",
+    "embedding_api_key",
+    "client_secret",
+    "secret",
+}
+REDACTED = "[REDACTED]"
 
 
-def req(method: str, path: str, body=None, token=None, expect=None, label=None):
-    data = None if body is None else json.dumps(body).encode("utf-8")
-    headers = {"Content-Type": "application/json"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    request = urllib.request.Request(BASE + path, data=data, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(request, timeout=180) as resp:
-            raw = resp.read().decode("utf-8")
-            payload = json.loads(raw) if raw else None
-            entry = {"method": method, "path": path, "status": resp.status, "body": payload}
-    except urllib.error.HTTPError as exc:
-        raw = exc.read().decode("utf-8")
-        try:
-            payload = json.loads(raw) if raw else None
-        except Exception:
-            payload = raw
-        entry = {"method": method, "path": path, "status": exc.code, "body": payload}
-    except Exception as exc:  # noqa: BLE001
-        entry = {"method": method, "path": path, "status": "ERROR", "body": str(exc)}
-    if label:
-        entry["label"] = label
-    if expect is not None:
-        entry["expected"] = expect
-        entry["ok"] = entry["status"] == expect
-    evidence["steps"].append(entry)
-    mark = ""
-    if expect is not None:
-        mark = f" ok={entry['ok']}"
-    print(f"{method} {path} -> {entry['status']}{mark}")
-    return entry
+def load_local_env() -> None:
+    """Carga secretos locales sin imprimirlos. `.env.local` gana sobre `.env`."""
+    load_dotenv(BACKEND_DIR / ".env", override=False)
+    load_dotenv(BACKEND_DIR / ".env.local", override=True)
+    load_dotenv(OUT / ".env.local", override=True)
 
 
-def check(name: str, ok: bool, **extra):
-    evidence["steps"].append({"check": name, "ok": ok, **extra})
-    print(f"CHECK {name} => {ok}")
+def redact_for_evidence(obj):
+    """Copia profunda con secretos sustituidos; no altera el objeto en memoria de la corrida."""
+    if isinstance(obj, dict):
+        out = {}
+        for key, value in obj.items():
+            if key.lower() in REDACT_KEYS:
+                out[key] = REDACTED if value not in (None, "") else value
+            else:
+                out[key] = redact_for_evidence(value)
+        return out
+    if isinstance(obj, list):
+        return [redact_for_evidence(item) for item in obj]
+    if isinstance(obj, str):
+        lower = obj.lower()
+        if lower.startswith("bearer ") and len(obj) > 20:
+            return "Bearer [REDACTED]"
+        return obj
+    return obj
+
+
+def assert_local_base_url(raw: str) -> str:
+    base_url = str(raw).strip().rstrip("/") or DEFAULT_BASE_URL
+    parsed = urlparse(base_url)
+    if parsed.scheme not in {"http", "https"}:
+        raise SystemExit("base-url debe usar http o https")
+    host = (parsed.hostname or "").lower()
+    if host not in ALLOWED_HOSTS:
+        raise SystemExit("base-url solo admite localhost o 127.0.0.1")
+    if parsed.username or parsed.password:
+        raise SystemExit("base-url no debe incluir credenciales")
+    if parsed.path not in {"", "/"}:
+        raise SystemExit("base-url no debe incluir path")
+    return base_url
+
+
+def require_admin_password() -> str:
+    password = str(os.environ.get(ADMIN_PASSWORD_ENV, "")).strip()
+    if not password:
+        raise SystemExit(
+            f"Define {ADMIN_PASSWORD_ENV} en backend/.env.local (no versionado). "
+            "No se imprime ni se escribe en la evidencia."
+        )
+    return password
+
+
+def admin_email() -> str:
+    return str(os.environ.get(ADMIN_EMAIL_ENV, DEFAULT_ADMIN_EMAIL)).strip().lower() or DEFAULT_ADMIN_EMAIL
+
+
+def generate_farmer_password(length: int = 24) -> str:
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*-_"
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Validacion API PMV3 con evidencia JSON")
+    parser.add_argument(
+        "--base-url",
+        default=os.environ.get("PMV3_API_BASE_URL", DEFAULT_BASE_URL),
+        help=(
+            f"URL base local del API (default: {DEFAULT_BASE_URL}). "
+            "Solo localhost/127.0.0.1. Ejemplo: http://127.0.0.1:8010"
+        ),
+    )
+    return parser.parse_args()
 
 
 def main() -> int:
+    load_local_env()
+    args = parse_args()
+    base_url = assert_local_base_url(args.base_url)
+    admin_pass = require_admin_password()
+    admin_mail = admin_email()
+    farmer_pass = generate_farmer_password()
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    evidence: dict = {
+        "stamp": stamp,
+        "base_url": base_url,
+        "steps": [],
+        "observations": [],
+    }
+
+    def req(method: str, path: str, body=None, token=None, expect=None, label=None):
+        data = None if body is None else json.dumps(body).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        request = urllib.request.Request(
+            base_url + path, data=data, headers=headers, method=method
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=180) as resp:
+                raw = resp.read().decode("utf-8")
+                payload = json.loads(raw) if raw else None
+                entry = {"method": method, "path": path, "status": resp.status, "body": payload}
+        except urllib.error.HTTPError as exc:
+            raw = exc.read().decode("utf-8")
+            try:
+                payload = json.loads(raw) if raw else None
+            except Exception:
+                payload = raw
+            entry = {"method": method, "path": path, "status": exc.code, "body": payload}
+        except Exception as exc:  # noqa: BLE001
+            entry = {"method": method, "path": path, "status": "ERROR", "body": str(exc)}
+        if label:
+            entry["label"] = label
+        if expect is not None:
+            entry["expected"] = expect
+            entry["ok"] = entry["status"] == expect
+        evidence["steps"].append(entry)
+        mark = ""
+        if expect is not None:
+            mark = f" ok={entry['ok']}"
+        print(f"{method} {path} -> {entry['status']}{mark}")
+        return entry
+
+    def check(name: str, ok: bool, **extra):
+        evidence["steps"].append({"check": name, "ok": ok, **extra})
+        print(f"CHECK {name} => {ok}")
+
     health = req("GET", "/health", expect=200, label="health")
     health_body = health.get("body") or {}
     check(
@@ -65,7 +179,7 @@ def main() -> int:
     admin_login = req(
         "POST",
         "/api/v1/admin/auth/login",
-        {"email": "admin@gmail.com", "password": "AdminValidacion123"},
+        {"email": admin_mail, "password": admin_pass},
         expect=200,
         label="admin_login",
     )
@@ -73,14 +187,14 @@ def main() -> int:
     check("admin_token_present", bool(admin_token))
 
     farmer_email = f"pmv3.farmer.{stamp.lower()}@test.local"
-    farmer_reg = req(
+    req(
         "POST",
         "/api/v1/auth/register",
         {
             "names": "Agricultor",
             "last_names": "PMV3 Validacion",
             "email": farmer_email,
-            "password": "FarmerValidacion123",
+            "password": farmer_pass,
         },
         expect=201,
         label="farmer_register",
@@ -88,12 +202,15 @@ def main() -> int:
     farmer_login = req(
         "POST",
         "/api/v1/auth/login",
-        {"email": farmer_email, "password": "FarmerValidacion123"},
+        {"email": farmer_email, "password": farmer_pass},
         expect=200,
         label="farmer_login",
     )
     farmer_token = (farmer_login.get("body") or {}).get("access_token")
     check("farmer_token_present", bool(farmer_token))
+    # Credenciales de corrida: no se escriben a evidencia ni a logs.
+    farmer_pass = ""
+    admin_pass = ""
 
     # HU-14
     req("GET", "/api/v1/admin/documents", expect=401, label="hu14_no_token_docs")
@@ -383,8 +500,15 @@ def main() -> int:
     evidence["evaluations"] = evals.get("body")
 
     out_file = OUT / f"api_validacion_{stamp}.json"
-    out_file.write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
+    # Tokens siguen en memoria (admin_token/farmer_token) para la corrida;
+    # solo la copia escrita a disco se redacta.
+    safe_evidence = redact_for_evidence(copy.deepcopy(evidence))
+    out_file.write_text(
+        json.dumps(safe_evidence, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     print("WROTE", out_file)
+    print("BASE_URL", base_url)
 
     failed = [
         s
@@ -393,7 +517,9 @@ def main() -> int:
     ]
     print("FAILED", len(failed))
     for item in failed:
-        print(" -", item.get("label") or item.get("check"), item)
+        label = item.get("label") or item.get("check")
+        status = item.get("status")
+        print(f" - {label} status={status} ok={item.get('ok')}")
     return 1 if failed else 0
 
 

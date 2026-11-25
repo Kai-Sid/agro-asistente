@@ -32,7 +32,7 @@
       "path": "/api/v1/admin/auth/login",
       "status": 200,
       "body": {
-        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJhZG1pbkBnbWFpbC5jb20iLCJyb2wiOiJBRE1JTklTVFJBRE9SIiwiZXhwIjoxNzk1NTg2MTM4fQ.yoDmBEMX7x44IsT5wWyzNVNlki_ilAdsBQ7tCWvYIBc",
+        "access_token": "[REDACTED]",
         "token_type": "bearer",
         "role": "ADMINISTRADOR",
         "name": "admin",
@@ -65,7 +65,7 @@
       "path": "/api/v1/auth/login",
       "status": 200,
       "body": {
-        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZW1haWwiOiJwbXYzLmZhcm1lci4yMDI2MTEyNXQwMzU1Mzd6QHRlc3QubG9jYWwiLCJyb2wiOiJBR1JJQ1VMVE9SIiwiZXhwIjoxNzk1NTg2MTM4fQ.-O5k-a4ZJ5YckeZrwNPHp1crQ20B7uaUfZA2f2oBwlI",
+        "access_token": "[REDACTED]",
         "token_type": "bearer",
         "farmer": {
           "id": "3",

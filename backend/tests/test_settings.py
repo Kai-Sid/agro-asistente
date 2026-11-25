@@ -5,6 +5,7 @@ def test_settings_load_defaults_without_secrets_in_code() -> None:
     settings = Settings(_env_file=None)
 
     assert settings.app_name == "agro-asistente"
+    assert Settings.model_fields["api_port"].default == 8000
     assert settings.mysql_database == "agro_asistente"
     assert settings.embedding_provider == "local"
     assert settings.chroma_collection == "agro_knowledge_pmv1"

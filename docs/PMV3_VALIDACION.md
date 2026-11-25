@@ -1,7 +1,7 @@
 # Validación ejecutable PMV3
 
-Fecha de actualización: 2026-11-25 (incluye HU-17 simulada)  
-Entorno: Laragon local · API `http://127.0.0.1:8010` · Ollama `127.0.0.1:11434`  
+Fecha de actualización: 2026-11-25 (incluye HU-17 simulada)
+Entorno: Laragon local · API predeterminada `http://127.0.0.1:8000` (corridas de evidencia de este cierre: `8010` local) · Ollama `127.0.0.1:11434`
 Evidencia: `docs/evidencia_pmv3/` · Resultados RAGAS: `backend/evaluation/results/`
 
 ## Cierre técnico
@@ -70,7 +70,7 @@ Sin cambios respecto a la aprobación previa:
 
 Tras consultas exitosas con Ollama:
 
-- API `GET /api/v1/admin/metrics?days=1`:  
+- API `GET /api/v1/admin/metrics?days=1`:
   `total_requests=13`, `queries_attended=8`, `requests_with_error=5`
 - Coincide con el registro de métricas del periodo (incluye corridas previas con 503 y la validación actual con 201).
 - Estado vacío: implementado en UI cuando `total_requests === 0`; observado vía API en corridas tempranas.
@@ -81,8 +81,8 @@ Tras consultas exitosas con Ollama:
 
 ### Corrida histórica incompleta (no aprobar)
 
-`backend/evaluation/results/*_20261125T051444Z.json`  
-Ver `backend/evaluation/results/INCOMPLETE_20261125T051444Z.md`  
+`backend/evaluation/results/*_20261125T051444Z.json`
+Ver `backend/evaluation/results/INCOMPLETE_20261125T051444Z.md`
 Problemas: `answer_relevancy=NaN`, fallo MySQL `duracion_promedio`, embeddings incompatibles.
 
 ### Corrida aceptada
