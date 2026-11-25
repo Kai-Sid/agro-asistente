@@ -93,7 +93,7 @@ BEGIN
   FROM contextos_agricolas
   WHERE id = p_contexto_id AND agricultor_id = p_agricultor_id
   LIMIT 1;
-END$
+END$$
 
 DROP PROCEDURE IF EXISTS sp_contexto_agricola_buscar_seleccionado$$
 CREATE PROCEDURE sp_contexto_agricola_buscar_seleccionado(IN p_agricultor_id INT)
