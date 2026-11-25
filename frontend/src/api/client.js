@@ -7,7 +7,7 @@ export const api = axios.create({
 });
 
 const ACCESS_TOKEN_KEY = "agro_asistente_access_token";
-const PUBLIC_AUTH_PATHS = ["/api/v1/auth/login", "/api/v1/auth/register"];
+const PUBLIC_AUTH_PATHS = ["/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/admin/auth/login"];\nconst SESSION_ROLE_KEY = "agro_asistente_session_role";
 
 export function saveAccessToken(token) {
   if (typeof token !== "string" || !token.trim()) {
@@ -38,7 +38,7 @@ export function saveSessionFarmer(farmer) {
   if (!displayName) {
     return;
   }
-  window.localStorage.setItem(SESSION_FARMER_KEY, displayName);
+  window.localStorage.setItem(SESSION_FARMER_KEY, displayName);\n  window.localStorage.setItem(SESSION_ROLE_KEY, "AGRICULTOR");
 }
 
 export function getSessionFarmer() {
@@ -47,7 +47,7 @@ export function getSessionFarmer() {
 
 export function clearSession() {
   clearAccessToken();
-  window.localStorage.removeItem(SESSION_FARMER_KEY);
+  window.localStorage.removeItem(SESSION_FARMER_KEY);\n  window.localStorage.removeItem(SESSION_ROLE_KEY);
 }
 
 function isPublicAuthRequest(config) {
@@ -118,3 +118,4 @@ export function listKnowledgeDocuments() {
 export function ingestKnowledge(payload) {
   return api.post("/api/v1/knowledge/ingest", payload);
 }
+\nexport function loginAdmin(payload) {\n  return api.post("/api/v1/admin/auth/login", payload);\n}\n\nexport function listAdminDocuments() {\n  return api.get("/api/v1/admin/documents");\n}\n\nexport function createAdminDocument(payload) {\n  return api.post("/api/v1/admin/documents", payload);\n}\n\nexport function getAdminDocument(documentId) {\n  return api.get(`/api/v1/admin/documents/${documentId}`);\n}\n\nexport function updateAdminDocument(documentId, payload) {\n  return api.put(`/api/v1/admin/documents/${documentId}`, payload);\n}\n\nexport function setAdminDocumentStatus(documentId, status) {\n  return api.patch(`/api/v1/admin/documents/${documentId}/status`, { status });\n}\n\nexport function getAdminMetrics(days = 30) {\n  return api.get("/api/v1/admin/metrics", { params: { days } });\n}\n
