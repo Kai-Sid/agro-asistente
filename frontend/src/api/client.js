@@ -152,3 +152,11 @@ export function setAdminDocumentStatus(documentId, status) {
 export function getAdminMetrics(days = 30) {
   return api.get("/api/v1/admin/metrics", { params: { days } });
 }
+
+export function listAdminEvaluations() {
+  return api.get("/api/v1/admin/evaluations");
+}
+
+export function getAdminEvaluationDetails(evaluationId) {
+  return api.get("/api/v1/admin/evaluations/" + evaluationId + "/details");
+}
