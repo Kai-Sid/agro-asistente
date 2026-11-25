@@ -58,8 +58,9 @@ def main() -> int:
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    samples_path = RESULTS_DIR / f"pmv1_baseline_samples_{stamp}.json"
-    scores_path = RESULTS_DIR / f"pmv1_baseline_scores_{stamp}.json"
+    slug = "".join(char if char.isalnum() or char in "-_" else "_" for char in dataset.id)
+    samples_path = RESULTS_DIR / f"{slug}_samples_{stamp}.json"
+    scores_path = RESULTS_DIR / f"{slug}_scores_{stamp}.json"
     payload_samples = {
         "dataset_id": dataset.id,
         "dataset_version": dataset.phase,
