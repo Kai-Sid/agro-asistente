@@ -1,6 +1,7 @@
 -- Agro Asistente: procedimientos para operaciones MySQL del backend.
 -- Ejecutar después de database/schema.sql. El backend debe usar CALL mediante callproc;
 -- no mantener SELECT/INSERT/UPDATE del dominio dentro de adaptadores Python.
+USE agro_asistente;
 DELIMITER $$
 
 DROP PROCEDURE IF EXISTS sp_agricultor_existe_por_correo$$
