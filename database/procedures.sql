@@ -183,9 +183,11 @@ END$$
 DROP PROCEDURE IF EXISTS sp_documentos_conocimiento_listar$$
 CREATE PROCEDURE sp_documentos_conocimiento_listar()
 BEGIN
-  SELECT id, ruta_origen, hash_contenido, fecha_creacion
-  FROM documentos_conocimiento
-  ORDER BY fecha_creacion DESC, id DESC;
+  SELECT d.id, d.ruta_origen, d.hash_contenido, d.fecha_creacion
+  FROM documentos_conocimiento d
+  LEFT JOIN documentos_conocimiento_administracion a ON a.documento_id = d.id
+  WHERE COALESCE(a.estado, 'ACTIVO') = 'ACTIVO'
+  ORDER BY d.fecha_creacion DESC, d.id DESC;
 END$$
 
 DROP PROCEDURE IF EXISTS sp_documento_conocimiento_buscar_por_id$$
