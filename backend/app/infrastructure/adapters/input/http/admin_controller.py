@@ -259,4 +259,34 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
             container.puerto_indexar_conocimiento.ejecutar()
         return rows[0] if rows else {"documento_id": document_id, "estado": payload.status}
 
+
+    @router.get("/evaluations")
+    def list_evaluations(
+        _admin_id: str = Depends(current_admin),
+    ) -> list[dict[str, object]]:
+        rows = procedures.call("sp_evaluaciones_ia_listar")
+        return [
+            {
+                "id": str(row["id"]),
+                "dataset_version": str(row["dataset_version"]),
+                "provider": str(row["proveedor"]),
+                "model": str(row["modelo"]),
+                "retrieval_precision": float(row["precision_promedio"] or 0),
+                "answer_pertinence": float(row["pertinencia_promedio"] or 0),
+                "faithfulness": float(row["fidelidad_promedio"]) if row["fidelidad_promedio"] is not None else None,
+                "context_recall": float(row["recall_contexto_promedio"]) if row["recall_contexto_promedio"] is not None else None,
+                "average_response_ms": float(row["duracion_promedio_ms"] or 0),
+                "sample_count": int(row["total_muestras"] or 0),
+                "created_at": str(row["fecha_creacion"] or ""),
+            }
+            for row in rows
+        ]
+
+    @router.get("/evaluations/{evaluation_id}/details")
+    def evaluation_details(
+        evaluation_id: int,
+        _admin_id: str = Depends(current_admin),
+    ) -> list[dict[str, object]]:
+        return procedures.call("sp_evaluacion_ia_detalles_listar", (evaluation_id,))
+
     return router
