@@ -183,7 +183,7 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
                 "sp_admin_documento_contenido_actualizar",
                 (document_id, content_hash.value, payload.title.strip(), payload.topic.strip()),
             )
-        except pymysql.err.MySQLError as error:
+        except pymysql.err.OperationalError as error:
             if error.args and error.args[0] == 1644:
                 raise HTTPException(status_code=409, detail=str(error.args[-1])) from error
             raise
