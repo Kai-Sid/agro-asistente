@@ -34,7 +34,8 @@ def main() -> int:
         recuperacion = construir_recuperacion(settings)
         exigir_indice_chroma(recuperacion)
         generacion = construir_generacion(settings)
-        dataset_path = Path(settings.evaluation_dataset_path) if settings.evaluation_dataset_path else None\n        dataset = cargar_dataset(dataset_path)
+        dataset_path = Path(settings.evaluation_dataset_path) if settings.evaluation_dataset_path else None
+        dataset = cargar_dataset(dataset_path)
         muestras = ejecutar_dataset(dataset, recuperacion, generacion)
         scores = ejecutar_ragas(muestras, settings)
     except EvaluacionOficialNoEjecutable as error:
