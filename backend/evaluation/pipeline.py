@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from time import perf_counter
+import unicodedata
 
 from app.application.services.servicio_recuperacion_rag import ServicioRecuperacionRag
 from app.domain.ports.output.text_generation_port import PasajeRecuperado, PuertoGeneracionTexto
@@ -30,6 +32,7 @@ class MuestraPipeline:
     source_documents: list[str]
     generation_method: str
     retrieved_document_titles: list[str] = field(default_factory=list)
+    duration_ms: float = 0.0
 
 
 def construir_recuperacion(settings: Settings) -> ServicioRecuperacionRag:
@@ -77,6 +80,7 @@ def ejecutar_item(
     recuperacion: ServicioRecuperacionRag,
     generacion: PuertoGeneracionTexto,
 ) -> MuestraPipeline:
+    inicio = perf_counter()
     fragmentos = recuperacion.recuperar(item.question)
     pasajes = [
         PasajeRecuperado(titulo=fragmento.titulo_documento, extracto=fragmento.extracto)
@@ -99,6 +103,7 @@ def ejecutar_item(
         source_documents=list(item.source_documents),
         generation_method=generada.metodo_generacion,
         retrieved_document_titles=[fragmento.titulo_documento for fragmento in fragmentos],
+        duration_ms=round((perf_counter() - inicio) * 1000, 3),
     )
 
 
@@ -127,3 +132,29 @@ def filas_ragas(muestras: list[MuestraPipeline]) -> list[dict[str, object]]:
             }
         )
     return filas
+
+
+def precision_recuperacion_lexica(muestra: MuestraPipeline) -> float:
+    """Proxy transparente: fracción de fragmentos recuperados que comparte términos con la referencia."""
+    if not muestra.contexts:
+        return 0.0
+    expected = _tokens(muestra.ground_truth)
+    if not expected:
+        return 0.0
+    relevant = sum(bool(expected.intersection(_tokens(context))) for context in muestra.contexts)
+    return round(relevant / len(muestra.contexts), 6)
+
+
+def pertinencia_lexica(muestra: MuestraPipeline) -> float:
+    """Cobertura léxica de referencia, complementaria y no equivalente a juicio experto."""
+    expected = _tokens(muestra.ground_truth)
+    if not expected:
+        return 0.0
+    answer = _tokens(muestra.answer)
+    return round(len(expected.intersection(answer)) / len(expected), 6)
+
+
+def _tokens(text: str) -> set[str]:
+    normalized = unicodedata.normalize("NFKD", (text or "").casefold())
+    plain = "".join(char for char in normalized if not unicodedata.combining(char))
+    return {token.strip(".,;:!?¿¡()[]{}\"'") for token in plain.split() if len(token.strip(".,;:!?¿¡()[]{}\"'")) > 2}
