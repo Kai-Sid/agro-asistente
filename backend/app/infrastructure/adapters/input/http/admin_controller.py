@@ -124,6 +124,36 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
             )
         return result
 
+    @router.get("/documents/{document_id}")
+    def get_document(
+        document_id: int,
+        _admin_id: str = Depends(current_admin),
+    ) -> dict[str, object]:
+        rows = procedures.call("sp_admin_documentos_listar")
+        row = next((item for item in rows if int(item["id"]) == document_id), None)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Documento no encontrado")
+        source = str(row.get("ruta_origen") or "")
+        target = Path(container.settings.knowledge_dir) / Path(source).name
+        if not target.is_file():
+            raise HTTPException(status_code=409, detail="No se encontró el archivo del documento.")
+        metadata_path = target.with_suffix(".meta.json")
+        metadata: dict[str, object] = {}
+        if metadata_path.is_file():
+            try:
+                value = json.loads(metadata_path.read_text(encoding="utf-8"))
+                metadata = value if isinstance(value, dict) else {}
+            except (OSError, ValueError):
+                metadata = {}
+        return {
+            "id": str(row["id"]),
+            "title": str(row.get("titulo") or metadata.get("title") or ""),
+            "topic": str(row.get("tema") or metadata.get("topic") or ""),
+            "content": target.read_text(encoding="utf-8"),
+            "status": str(row.get("estado") or "ACTIVO"),
+            "version": int(row.get("version") or 1),
+        }
+
     @router.post("/documents", status_code=status.HTTP_201_CREATED)
     def create_document(
         payload: AdminDocumentRequest,
