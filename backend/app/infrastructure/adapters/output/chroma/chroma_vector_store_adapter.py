@@ -44,6 +44,10 @@ class ChromaVectorStoreAdapter(VectorStorePort):
             metadatas=[_chroma_metadata(record.metadata) for record in records],
         )
 
+    def delete_by_document(self, document_id: str) -> None:
+        """Retira del índice todos los fragmentos de un documento deshabilitado o actualizado."""
+        self._collection.delete(where={"document_id": str(document_id)})
+
     def similarity_search(self, embedding: list[float], top_k: int) -> list[VectorSearchHit]:
         if top_k < 1 or not embedding:
             return []
