@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from app.infrastructure.config.cors import registrar_cors
 
-from app.infrastructure.adapters.input.http.auth_controller import create_auth_router
+from app.infrastructure.adapters.input.http.auth_controller import create_auth_router\nfrom app.infrastructure.adapters.input.http.admin_controller import create_admin_router
 from app.infrastructure.adapters.input.http.clasificacion_controller import (
     create_clasificacion_router,
 )
@@ -27,7 +27,7 @@ app = FastAPI(
 registrar_cors(app, container.settings)
 
 app.include_router(create_health_router(container))
-app.include_router(create_auth_router(container))
+app.include_router(create_auth_router(container))\napp.include_router(create_admin_router(container))
 app.include_router(create_context_router(container))
 app.include_router(create_query_router(container))
 app.include_router(create_knowledge_router(container))
