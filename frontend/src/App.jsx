@@ -10,7 +10,7 @@ import QueryPage from "./pages/QueryPage.jsx";
 import RiskPage from "./pages/RiskPage.jsx";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
 import AdminDocumentsPage from "./pages/AdminDocumentsPage.jsx";
-import AdminMetricsPage from "./pages/AdminMetricsPage.jsx";
+import AdminMetricsPage from "./pages/AdminMetricsPage.jsx";\nimport AdminEvaluationsPage from "./pages/AdminEvaluationsPage.jsx";
 
 export default function App() {
   return (
@@ -28,7 +28,7 @@ export default function App() {
       <Route element={<ProtectedRoute role="ADMINISTRADOR" />}>
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/admin/documents" element={<AdminDocumentsPage />} />
-        <Route path="/admin/metrics" element={<AdminMetricsPage />} />
+        <Route path="/admin/metrics" element={<AdminMetricsPage />} />\n        <Route path="/admin/evaluations" element={<AdminEvaluationsPage />} />
       </Route>
     </Routes>
   );
