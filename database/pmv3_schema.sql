@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS evaluaciones_ia_detalle (
     evaluacion_id BIGINT NOT NULL,
     item_id VARCHAR(100) NOT NULL,
     pregunta TEXT NOT NULL,
-    precision DECIMAL(8,6) NULL,
+    precision_score DECIMAL(8,6) NULL,
     pertinencia DECIMAL(8,6) NULL,
     duracion_ms DECIMAL(12,3) NOT NULL DEFAULT 0,
     respuesta TEXT NOT NULL,
