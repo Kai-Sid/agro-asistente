@@ -1,0 +1,83 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\__main__.py", line 4, in <module>
+    uvicorn.main()
+    ~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\click\core.py", line 1653, in __call__
+    return self.main(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\click\core.py", line 1560, in main
+    rv = self.invoke(ctx)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\click\core.py", line 1414, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\click\core.py", line 911, in invoke
+    return callback(*args, **kwargs)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\main.py", line 448, in main
+    run(
+    ~~~^
+        app,
+        ^^^^
+    ...<49 lines>...
+        reset_contextvars=reset_contextvars,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\main.py", line 620, in run
+    config.load_app()
+    ~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\config.py", line 434, in load_app
+    return import_from_string(self.app)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "D:\Programas\Python\App\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1404, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1369, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1340, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1027, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\main.py", line 7, in <module>
+    from app.infrastructure.adapters.input.http.auth_controller import create_auth_router
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\input\http\auth_controller.py", line 14, in <module>
+    from app.infrastructure.composition import CompositionRoot
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\composition.py", line 73, in <module>
+    from app.infrastructure.adapters.output.mysql.connection import create_session_factory
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\output\mysql\connection.py", line 1, in <module>
+    from sqlalchemy import Engine, create_engine, text
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\__init__.py", line 13, in <module>
+    from .engine import AdaptedConnection as AdaptedConnection
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\__init__.py", line 18, in <module>
+    from . import events as events
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\events.py", line 20, in <module>
+    from .base import Connection
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 29, in <module>
+    from .interfaces import BindTyping
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\interfaces.py", line 40, in <module>
+    from ..sql.compiler import Compiled as Compiled
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\sql\__init__.py", line 16, in <module>
+    from .compiler import COLLECT_CARTESIAN_PRODUCTS as COLLECT_CARTESIAN_PRODUCTS
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 68, in <module>
+    from . import crud
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\sql\crud.py", line 37, in <module>
+    from . import dml
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\sql\dml.py", line 38, in <module>
+    from . import util as sql_util
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\sql\util.py", line 48, in <module>
+    from .ddl import sort_tables as sort_tables  # noqa: F401
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 43, in <module>
+    from .selectable import SelectBase
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\sql\selectable.py", line 52, in <module>
+    from ._annotated_cols import _ColClauseCC_co
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\sql\_annotated_cols.py", line 17, in <module>
+    from . import sqltypes
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 66, in <module>
+    from ..engine import processors
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\processors.py", line 25, in <module>
+    from ._processors_cy import int_to_boolean as int_to_boolean  # noqa: F401
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ImportError: DLL load failed while importing _processors_cy: Una directiva de Control de aplicaciones bloqueó este archivo.

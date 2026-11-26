@@ -1,0 +1,973 @@
+INFO:     Started server process [20876]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55040 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55040 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55040 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55061 - "GET /api/v1/contexts HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:55061 - "GET /api/v1/knowledge/documents HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:55061 - "GET /api/v1/weather/observations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63226 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63232 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53051 - "POST /api/v1/auth/login HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 691, in connect
+    sock = socket.create_connection(
+        (self.host, self.port), self.connect_timeout, **kwargs
+    )
+  File "D:\Programas\Python\App\Lib\socket.py", line 868, in create_connection
+    raise exceptions[0]
+  File "D:\Programas\Python\App\Lib\socket.py", line 853, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 154, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3303, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 460, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1355, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 728, in checkout
+    rec = pool._do_get()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 174, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 401, in _create_connection
+    return _ConnectionRecord(self)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 690, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 947, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 943, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 645, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 869, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 378, in __init__
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 754, in connect
+    raise exc
+pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost' ([WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión)")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\applications.py", line 1224, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\_body_limit.py", line 80, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 149, in simple_response
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\routing.py", line 683, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 2929, in app
+    await route.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1916, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 3015, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1945, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1373, in handle
+    await effective_context.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 175, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 161, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 762, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 383, in run_endpoint_function
+    return await run_in_threadpool(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+        _run_sync_endpoint, function=dependant.call, arguments=values
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2779, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1124, in run
+    result = context.run(func, *args)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\telemetry\_api.py", line 244, in _run_sync_endpoint
+    return function(**arguments)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\input\http\auth_controller.py", line 100, in login
+    result = container.puerto_iniciar_sesion_agricultor.ejecutar(command)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\application\useCases\iniciar_sesion_agricultor.py", line 39, in ejecutar
+    agricultor = self._repositorio_agricultor.buscar_por_correo(email)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\output\mysql\repositorio_agricultor.py", line 36, in buscar_por_correo
+    registro = session.scalar(
+        select(RegistroAgricultor).where(RegistroAgricultor.correo == email.value)
+    )
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2616, in scalar
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        **kw,
+        ^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2432, in _execute_internal
+    conn = self._connection_for_bind(bind)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2255, in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<sqlalchemy generated _go() wrapper for sqlalchemy.orm.session.SessionTransaction._connection_for_bind>", line 2, in _connection_for_bind
+    return target(fn, self, bind, execution_options)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1282, in _connection_for_bind
+    conn = bind.connect()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3279, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 156, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, engine
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2436, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 154, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3303, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 460, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1355, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 728, in checkout
+    rec = pool._do_get()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 174, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 401, in _create_connection
+    return _ConnectionRecord(self)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 690, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 947, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 943, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 645, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 869, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 378, in __init__
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 754, in connect
+    raise exc
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on 'localhost' ([WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión)")
+(Background on this error at: https://sqlalche.me/e/21/e3q8)
+INFO:     127.0.0.1:59812 - "POST /api/v1/auth/login HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 691, in connect
+    sock = socket.create_connection(
+        (self.host, self.port), self.connect_timeout, **kwargs
+    )
+  File "D:\Programas\Python\App\Lib\socket.py", line 868, in create_connection
+    raise exceptions[0]
+  File "D:\Programas\Python\App\Lib\socket.py", line 853, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 154, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3303, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 460, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1355, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 728, in checkout
+    rec = pool._do_get()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 174, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 401, in _create_connection
+    return _ConnectionRecord(self)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 690, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 947, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 943, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 645, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 869, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 378, in __init__
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 754, in connect
+    raise exc
+pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost' ([WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión)")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\applications.py", line 1224, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\_body_limit.py", line 80, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 149, in simple_response
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\routing.py", line 683, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 2929, in app
+    await route.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1916, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 3015, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1945, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1373, in handle
+    await effective_context.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 175, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 161, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 762, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 383, in run_endpoint_function
+    return await run_in_threadpool(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+        _run_sync_endpoint, function=dependant.call, arguments=values
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2779, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1124, in run
+    result = context.run(func, *args)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\telemetry\_api.py", line 244, in _run_sync_endpoint
+    return function(**arguments)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\input\http\auth_controller.py", line 100, in login
+    result = container.puerto_iniciar_sesion_agricultor.ejecutar(command)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\application\useCases\iniciar_sesion_agricultor.py", line 39, in ejecutar
+    agricultor = self._repositorio_agricultor.buscar_por_correo(email)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\output\mysql\repositorio_agricultor.py", line 36, in buscar_por_correo
+    registro = session.scalar(
+        select(RegistroAgricultor).where(RegistroAgricultor.correo == email.value)
+    )
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2616, in scalar
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        **kw,
+        ^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2432, in _execute_internal
+    conn = self._connection_for_bind(bind)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2255, in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<sqlalchemy generated _go() wrapper for sqlalchemy.orm.session.SessionTransaction._connection_for_bind>", line 2, in _connection_for_bind
+    return target(fn, self, bind, execution_options)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1282, in _connection_for_bind
+    conn = bind.connect()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3279, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 156, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, engine
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2436, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 154, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3303, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 460, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1355, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 728, in checkout
+    rec = pool._do_get()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 174, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 401, in _create_connection
+    return _ConnectionRecord(self)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 690, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 947, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 943, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 645, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 869, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 378, in __init__
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 754, in connect
+    raise exc
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on 'localhost' ([WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión)")
+(Background on this error at: https://sqlalche.me/e/21/e3q8)
+INFO:     127.0.0.1:64076 - "POST /api/v1/auth/login HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 691, in connect
+    sock = socket.create_connection(
+        (self.host, self.port), self.connect_timeout, **kwargs
+    )
+  File "D:\Programas\Python\App\Lib\socket.py", line 868, in create_connection
+    raise exceptions[0]
+  File "D:\Programas\Python\App\Lib\socket.py", line 853, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 154, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3303, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 460, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1355, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 728, in checkout
+    rec = pool._do_get()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 174, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 401, in _create_connection
+    return _ConnectionRecord(self)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 690, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 947, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 943, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 645, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 869, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 378, in __init__
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 754, in connect
+    raise exc
+pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost' ([WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión)")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\applications.py", line 1224, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\_body_limit.py", line 80, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 149, in simple_response
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\routing.py", line 683, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 2929, in app
+    await route.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1916, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 3015, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1945, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1373, in handle
+    await effective_context.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 175, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 161, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 762, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 383, in run_endpoint_function
+    return await run_in_threadpool(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+        _run_sync_endpoint, function=dependant.call, arguments=values
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2779, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1124, in run
+    result = context.run(func, *args)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\telemetry\_api.py", line 244, in _run_sync_endpoint
+    return function(**arguments)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\input\http\auth_controller.py", line 100, in login
+    result = container.puerto_iniciar_sesion_agricultor.ejecutar(command)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\application\useCases\iniciar_sesion_agricultor.py", line 39, in ejecutar
+    agricultor = self._repositorio_agricultor.buscar_por_correo(email)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\output\mysql\repositorio_agricultor.py", line 36, in buscar_por_correo
+    registro = session.scalar(
+        select(RegistroAgricultor).where(RegistroAgricultor.correo == email.value)
+    )
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2616, in scalar
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        **kw,
+        ^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2432, in _execute_internal
+    conn = self._connection_for_bind(bind)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2255, in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<sqlalchemy generated _go() wrapper for sqlalchemy.orm.session.SessionTransaction._connection_for_bind>", line 2, in _connection_for_bind
+    return target(fn, self, bind, execution_options)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1282, in _connection_for_bind
+    conn = bind.connect()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3279, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 156, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, engine
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2436, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 154, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3303, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 460, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1355, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 728, in checkout
+    rec = pool._do_get()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 174, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 401, in _create_connection
+    return _ConnectionRecord(self)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 690, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 947, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 943, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 645, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 869, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 378, in __init__
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 754, in connect
+    raise exc
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on 'localhost' ([WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión)")
+(Background on this error at: https://sqlalche.me/e/21/e3q8)
+INFO:     127.0.0.1:58129 - "POST /api/v1/auth/register HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 691, in connect
+    sock = socket.create_connection(
+        (self.host, self.port), self.connect_timeout, **kwargs
+    )
+  File "D:\Programas\Python\App\Lib\socket.py", line 868, in create_connection
+    raise exceptions[0]
+  File "D:\Programas\Python\App\Lib\socket.py", line 853, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 154, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3303, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 460, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1355, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 728, in checkout
+    rec = pool._do_get()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 174, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 401, in _create_connection
+    return _ConnectionRecord(self)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 690, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 947, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 943, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 645, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 869, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 378, in __init__
+    Select-String -Path D:\Proyectos\Universidad\agro-asistente\evidencias\ejecucion\backend_logs.txt -Pattern 'POST /api|Exception in ASGI' | ForEach-Object { $_.Line.Trim() }            self.connect()
+                ^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 754, in connect
+    raise exc
+pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost' ([WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión)")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\applications.py", line 1224, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\_body_limit.py", line 80, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 149, in simple_response
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\routing.py", line 683, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 2929, in app
+    await route.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1916, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 3015, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1945, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 1373, in handle
+    await effective_context.app(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 175, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 161, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 762, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\routing.py", line 383, in run_endpoint_function
+    return await run_in_threadpool(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+        _run_sync_endpoint, function=dependant.call, arguments=values
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2779, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1124, in run
+    result = context.run(func, *args)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\fastapi\telemetry\_api.py", line 244, in _run_sync_endpoint
+    return function(**arguments)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\input\http\auth_controller.py", line 65, in register
+    result = container.puerto_registrar_agricultor.ejecutar(command)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\application\useCases\registrar_agricultor.py", line 44, in ejecutar
+    if self._repositorio_agricultor.existe_por_correo(email):
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\app\infrastructure\adapters\output\mysql\repositorio_agricultor.py", line 29, in existe_por_correo
+    agricultor_id = session.scalar(
+        select(RegistroAgricultor.id).where(RegistroAgricultor.correo == email.value)
+    )
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2616, in scalar
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        **kw,
+        ^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2432, in _execute_internal
+    conn = self._connection_for_bind(bind)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2255, in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<sqlalchemy generated _go() wrapper for sqlalchemy.orm.session.SessionTransaction._connection_for_bind>", line 2, in _connection_for_bind
+    return target(fn, self, bind, execution_options)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1282, in _connection_for_bind
+    conn = bind.connect()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3279, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 156, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, engine
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2436, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 154, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3303, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 460, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1355, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 728, in checkout
+    rec = pool._do_get()
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 174, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 401, in _create_connection
+    return _ConnectionRecord(self)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 690, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 947, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 943, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 645, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 869, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 378, in __init__
+    Select-String -Path D:\Proyectos\Universidad\agro-asistente\evidencias\ejecucion\backend_logs.txt -Pattern 'POST /api|Exception in ASGI' | ForEach-Object { $_.Line.Trim() }            self.connect()
+                ^^^^^^^^^^^^^^
+  File "D:\Proyectos\Universidad\agro-asistente\backend\venv\Lib\site-packages\pymysql\connections.py", line 754, in connect
+    raise exc
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on 'localhost' ([WinError 10061] No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión)")
+(Background on this error at: https://sqlalche.me/e/21/e3q8)

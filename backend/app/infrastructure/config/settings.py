@@ -4,6 +4,11 @@ from urllib.parse import quote_plus
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+ORIGEN_LOCAL = "http://localhost:5173"
+ORIGEN_PAGES = "https://agro-asistente.pages.dev"
+PATRON_DESPLIEGUE_PAGES = "https://*.agro-asistente.pages.dev"
+REGEX_DESPLIEGUE_PAGES = r"^https://[A-Za-z0-9-]+\.agro-asistente\.pages\.dev$"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -69,15 +74,26 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
+        """Orígenes exactos. Un asterisco suelto no entra; el dominio de Pages sí."""
         origins: list[str] = []
         for origin in self.cors_origins.split(","):
             limpio = origin.strip().rstrip("/")
-            if not limpio or "*" in limpio:
+            if not limpio or limpio == PATRON_DESPLIEGUE_PAGES:
                 continue
-            origins.append(limpio)
+            if "*" in limpio:
+                continue
+            if limpio not in origins:
+                origins.append(limpio)
         if not origins:
-            return ["http://localhost:5173"]
+            origins.append(ORIGEN_LOCAL)
+        if ORIGEN_PAGES not in origins:
+            origins.append(ORIGEN_PAGES)
         return origins
+
+    @property
+    def cors_origin_regex(self) -> str:
+        """Un solo nivel bajo agro-asistente.pages.dev, solo por HTTPS."""
+        return REGEX_DESPLIEGUE_PAGES
 
     @property
     def mysql_url(self) -> str:
