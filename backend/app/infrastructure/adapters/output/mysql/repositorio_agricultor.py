@@ -1,5 +1,6 @@
 import pymysql.err
-from sqlalchemy import DateTime, Integer, String
+
+from sqlalchemy import DateTime, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, sessionmaker
 
 from app.domain.entities.agricultor import Agricultor
@@ -8,7 +9,6 @@ from app.domain.ports.output.repositorio_agricultor_port import PuertoRepositori
 from app.domain.valueObjects.email import Email
 from app.domain.valueObjects.hash_contrasena import HashContrasena
 from app.infrastructure.adapters.output.mysql.connection import Base, id_a_dominio
-from app.infrastructure.adapters.output.mysql.procedures import MysqlStoredProcedureGateway
 
 
 class RegistroAgricultor(Base):
@@ -23,40 +23,84 @@ class RegistroAgricultor(Base):
 
 class RepositorioAgricultorMysql(PuertoRepositorioAgricultor):
     def __init__(self, session_factory: sessionmaker) -> None:
-        self._procedures = MysqlStoredProcedureGateway(session_factory)
+        self._session_factory = session_factory
 
     def existe_por_correo(self, email: Email) -> bool:
-        rows = self._procedures.call("sp_agricultor_existe_por_correo", (email.value,))
-        return bool(rows and rows[0]["existe"])
+        with self._session_factory() as session:
+            resultado = session.execute(
+                text("""
+                    SELECT EXISTS(
+                        SELECT 1
+                        FROM agricultores
+                        WHERE correo = :correo
+                    ) AS existe
+                """),
+                {"correo": email.value},
+            ).scalar_one()
+
+            return bool(resultado)
 
     def buscar_por_correo(self, email: Email) -> Agricultor | None:
-        rows = self._procedures.call("sp_agricultor_buscar_por_correo", (email.value,))
-        return self._a_entidad(rows[0]) if rows else None
+        with self._session_factory() as session:
+            registro = session.execute(
+                text("""
+                    SELECT
+                        id,
+                        nombre_completo,
+                        correo,
+                        contrasena_hash,
+                        fecha_creacion
+                    FROM agricultores
+                    WHERE correo = :correo
+                    LIMIT 1
+                """),
+                {"correo": email.value},
+            ).mappings().first()
+
+            return self._a_entidad(dict(registro)) if registro else None
 
     def guardar(self, agricultor: Agricultor) -> None:
         try:
-            rows = self._procedures.call(
-                "sp_agricultor_guardar",
-                (
-                    agricultor.nombre_completo[:150],
-                    agricultor.email.value[:150],
-                    agricultor.hash_contrasena.value,
-                    agricultor.creado_en,
-                ),
-            )
+            with self._session_factory() as session:
+                resultado = session.execute(
+                    text("""
+                        INSERT INTO agricultores (
+                            nombre_completo,
+                            correo,
+                            contrasena_hash,
+                            fecha_creacion
+                        )
+                        VALUES (
+                            :nombre_completo,
+                            :correo,
+                            :contrasena_hash,
+                            :fecha_creacion
+                        )
+                    """),
+                    {
+                        "nombre_completo": agricultor.nombre_completo[:150],
+                        "correo": agricultor.email.value[:150],
+                        "contrasena_hash": agricultor.hash_contrasena.value,
+                        "fecha_creacion": agricultor.creado_en,
+                    },
+                )
+
+                agricultor.id = id_a_dominio(resultado.lastrowid)
+                session.commit()
+
         except pymysql.err.IntegrityError as error:
             if error.args and error.args[0] == 1062:
                 raise ErrorCorreoDuplicado(
                     "El correo electrónico ya está registrado"
                 ) from error
             raise
-        if not rows:
-            raise RuntimeError("El procedimiento no devolvió el agricultor creado")
-        agricultor.id = id_a_dominio(rows[0]["id"])
 
     def _a_entidad(self, registro: dict[str, object]) -> Agricultor:
-        nombres, apellidos = _separar_nombre_completo(str(registro["nombre_completo"]))
+        nombres, apellidos = _separar_nombre_completo(
+            str(registro["nombre_completo"])
+        )
         creado = registro["fecha_creacion"]
+
         return Agricultor(
             agricultor_id=id_a_dominio(registro["id"]),
             nombres=nombres,
@@ -70,6 +114,8 @@ class RepositorioAgricultorMysql(PuertoRepositorioAgricultor):
 
 def _separar_nombre_completo(nombre_completo: str) -> tuple[str, str]:
     partes = (nombre_completo or "").strip().split(" ", 1)
+
     if len(partes) == 1:
         return partes[0], ""
+
     return partes[0], partes[1]
