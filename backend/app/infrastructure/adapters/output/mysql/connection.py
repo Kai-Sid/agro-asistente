@@ -1,6 +1,5 @@
 import pymysql.err
 from sqlalchemy import Engine, create_engine
-from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
