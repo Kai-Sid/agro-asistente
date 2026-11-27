@@ -3,8 +3,9 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
     dependencia_administrador_autenticado,
@@ -43,9 +44,97 @@ class AdminLoginResponse(BaseModel):
     email: str
 
 
+class AdminRegisterRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=3, max_length=150)
+    password: str = Field(min_length=12, max_length=72)
+
+    @field_validator("password")
+    @classmethod
+    def validate_bcrypt_password_size(cls, value: str) -> str:
+        if len(value.encode("utf-8")) > 72:
+            raise ValueError("La contraseña no debe superar 72 bytes.")
+        return value
+
+
+class AdminRegisterResponse(BaseModel):
+    name: str
+    email: str
+
+
 def create_admin_router(container: CompositionRoot) -> APIRouter:
     router = APIRouter(prefix="/api/v1/admin", tags=["administration"])
     current_admin = dependencia_administrador_autenticado(container)
+
+    @router.post(
+        "/auth/register",
+        status_code=status.HTTP_201_CREATED,
+        response_model=AdminRegisterResponse,
+    )
+    def register_admin(payload: AdminRegisterRequest) -> AdminRegisterResponse:
+        name = payload.name.strip()
+        email = payload.email.strip().lower()
+
+        if not name:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="El nombre es obligatorio.",
+            )
+
+        if email.count("@") != 1 or "." not in email.rsplit("@", 1)[-1]:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Ingresa un correo electrónico válido.",
+            )
+
+        password_hash = container.puerto_hasher_contrasena.hashear_contrasena(
+            payload.password
+        )
+
+        try:
+            with container.session_factory() as session:
+                existing_admin = session.execute(
+                    text("SELECT id FROM administradores LIMIT 1")
+                ).first()
+
+                if existing_admin:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            "El registro público ya está cerrado porque existe "
+                            "un administrador."
+                        ),
+                    )
+
+                session.execute(
+                    text("""
+                        INSERT INTO administradores (
+                            nombre,
+                            correo,
+                            contrasena_hash,
+                            activo
+                        )
+                        VALUES (
+                            :name,
+                            :email,
+                            :password_hash,
+                            1
+                        )
+                    """),
+                    {
+                        "name": name,
+                        "email": email,
+                        "password_hash": password_hash,
+                    },
+                )
+                session.commit()
+        except IntegrityError as error:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya existe una cuenta con ese correo.",
+            ) from error
+
+        return AdminRegisterResponse(name=name, email=email)
 
     def obtener_documento(session, document_id: int):
         return session.execute(

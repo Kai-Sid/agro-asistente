@@ -13,6 +13,7 @@ const PUBLIC_AUTH_PATHS = [
   "/api/v1/auth/login",
   "/api/v1/auth/register",
   "/api/v1/admin/auth/login",
+  "/api/v1/admin/auth/register",
 ];
 
 export function saveAccessToken(token) {
@@ -99,6 +100,10 @@ export function loginFarmer(payload) {
 
 export function loginAdmin(payload) {
   return api.post("/api/v1/admin/auth/login", payload);
+}
+
+export function registerAdmin(payload) {
+  return api.post("/api/v1/admin/auth/register", payload);
 }
 
 export function listContexts() {

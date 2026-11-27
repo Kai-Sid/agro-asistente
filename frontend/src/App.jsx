@@ -3,6 +3,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import AdminLoginPage from "./pages/AdminLoginPage.jsx";
+import AdminRegisterPage from "./pages/AdminRegisterPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import ContextPage from "./pages/ContextPage.jsx";
@@ -20,6 +21,7 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/register-admin" element={<AdminRegisterPage />} />
       <Route element={<ProtectedRoute role="AGRICULTOR" />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/context" element={<ContextPage />} />

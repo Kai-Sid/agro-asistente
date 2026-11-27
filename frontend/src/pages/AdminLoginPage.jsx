@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { loginAdmin, saveAccessToken, saveSessionAdmin } from "../api/client";
 import PublicShell from "../components/PublicShell.jsx";
@@ -44,6 +45,9 @@ export default function AdminLoginPage() {
           <button type="submit" disabled={loading}>{loading ? "Ingresando…" : "Ingresar como administrador"}</button>
         </form>
         {error && <div className="status status-error" role="alert"><p>{error}</p></div>}
+        <p className="nav-link">
+          <Link to="/register-admin">Registrar el primer administrador</Link>
+        </p>
       </section>
     </PublicShell>
   );
