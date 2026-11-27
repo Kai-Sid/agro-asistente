@@ -8,8 +8,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from sqlalchemy import text
+
 from app.infrastructure.adapters.output.mysql.connection import create_session_factory
-from app.infrastructure.adapters.output.mysql.procedures import MysqlStoredProcedureGateway
 from app.infrastructure.config.settings import Settings, get_settings
 from evaluation.dataset import cargar_dataset
 from evaluation.pipeline import (
