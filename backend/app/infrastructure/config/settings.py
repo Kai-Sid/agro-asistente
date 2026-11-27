@@ -28,7 +28,8 @@ class Settings(BaseSettings):
     mysql_user: str = "root"
     mysql_password: str = ""
     mysql_database: str = "agro_asistente"
-
+    mysql_ssl_ca: str = ""
+    
     jwt_secret: str = "change-me-in-local-env-do-not-use-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 120
