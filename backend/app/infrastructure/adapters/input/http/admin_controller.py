@@ -2,17 +2,21 @@ import json
 from pathlib import Path
 from typing import Literal
 
-import pymysql.err
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import text
 
 from app.infrastructure.adapters.input.http.dependencia_autenticacion import (
     dependencia_administrador_autenticado,
 )
-from app.domain.exceptions import ErrorDocumentoConocimientoDuplicado, ErrorDocumentoConocimientoInvalido
-from app.domain.ports.input.incorporar_conocimiento_port import ComandoIncorporarConocimiento
+from app.domain.exceptions import (
+    ErrorDocumentoConocimientoDuplicado,
+    ErrorDocumentoConocimientoInvalido,
+)
+from app.domain.ports.input.incorporar_conocimiento_port import (
+    ComandoIncorporarConocimiento,
+)
 from app.domain.valueObjects.hash_contenido import HashContenido
-from app.infrastructure.adapters.output.mysql.procedures import MysqlStoredProcedureGateway
 from app.infrastructure.composition import CompositionRoot
 
 
@@ -41,29 +45,97 @@ class AdminLoginResponse(BaseModel):
 
 def create_admin_router(container: CompositionRoot) -> APIRouter:
     router = APIRouter(prefix="/api/v1/admin", tags=["administration"])
-    procedures = MysqlStoredProcedureGateway(container.session_factory)
     current_admin = dependencia_administrador_autenticado(container)
+
+    def obtener_documento(session, document_id: int):
+        return session.execute(
+            text("""
+                SELECT
+                    d.id,
+                    d.ruta_origen,
+                    d.hash_contenido,
+                    d.fecha_creacion,
+                    COALESCE(a.titulo, '') AS titulo,
+                    COALESCE(a.tema, '') AS tema,
+                    COALESCE(a.estado, 'ACTIVO') AS estado,
+                    COALESCE(a.version, 1) AS version,
+                    a.fecha_actualizacion
+                FROM documentos_conocimiento AS d
+                LEFT JOIN documentos_conocimiento_administracion AS a
+                    ON a.documento_id = d.id
+                WHERE d.id = :document_id
+                LIMIT 1
+            """),
+            {"document_id": document_id},
+        ).mappings().first()
+
+    def guardar_metadata(
+        session,
+        documento_id: int,
+        titulo: str,
+        tema: str,
+    ) -> None:
+        session.execute(
+            text("""
+                INSERT INTO documentos_conocimiento_administracion (
+                    documento_id,
+                    titulo,
+                    tema,
+                    estado,
+                    version
+                )
+                VALUES (
+                    :documento_id,
+                    :titulo,
+                    :tema,
+                    'ACTIVO',
+                    1
+                )
+                ON DUPLICATE KEY UPDATE
+                    titulo = VALUES(titulo),
+                    tema = VALUES(tema)
+            """),
+            {
+                "documento_id": documento_id,
+                "titulo": titulo[:200],
+                "tema": tema[:50],
+            },
+        )
 
     @router.post("/auth/login", response_model=AdminLoginResponse)
     def login(payload: AdminLoginRequest) -> AdminLoginResponse:
         email = str(payload.email).strip().lower()
-        rows = procedures.call("sp_administrador_buscar_por_correo", (email,))
-        if not rows or not container.puerto_hasher_contrasena.verificar_contrasena(
-            payload.password, str(rows[0]["contrasena_hash"])
+
+        with container.session_factory() as session:
+            registro = session.execute(
+                text("""
+                    SELECT id, nombre, correo, contrasena_hash
+                    FROM administradores
+                    WHERE correo = :correo
+                      AND activo = 1
+                    LIMIT 1
+                """),
+                {"correo": email},
+            ).mappings().first()
+
+        if not registro or not container.puerto_hasher_contrasena.verificar_contrasena(
+            payload.password,
+            str(registro["contrasena_hash"]),
         ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Credenciales inválidas",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        admin = rows[0]
+
         token = container.puerto_emisor_token.emitir_token(
-            sujeto=str(admin["id"]),
+            sujeto=str(registro["id"]),
             claims={"email": email, "rol": "ADMINISTRADOR"},
         )
+
         return AdminLoginResponse(
             access_token=token,
-            name=str(admin["nombre"]),
+            name=str(registro["nombre"]),
             email=email,
         )
 
@@ -72,8 +144,28 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
         days: int = Query(default=30, ge=1, le=365),
         _admin_id: str = Depends(current_admin),
     ) -> dict[str, object]:
-        rows = procedures.call("sp_metricas_consulta_resumen", (days,))
-        summary = rows[0] if rows else {}
+        with container.session_factory() as session:
+            summary = session.execute(
+                text("""
+                    SELECT
+                        COUNT(*) AS total_solicitudes,
+                        SUM(
+                            CASE WHEN codigo_respuesta < 400 THEN 1 ELSE 0 END
+                        ) AS consultas_atendidas,
+                        SUM(
+                            CASE WHEN codigo_respuesta >= 400 THEN 1 ELSE 0 END
+                        ) AS solicitudes_con_error,
+                        AVG(duracion_ms) AS promedio_ms,
+                        MAX(duracion_ms) AS maximo_ms
+                    FROM metricas_consulta
+                    WHERE fecha_creacion >= DATE_SUB(
+                        CURRENT_TIMESTAMP,
+                        INTERVAL :days DAY
+                    )
+                """),
+                {"days": days},
+            ).mappings().first() or {}
+
         return {
             "days": days,
             "total_requests": int(summary.get("total_solicitudes") or 0),
@@ -83,45 +175,73 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
             "maximum_response_ms": int(summary.get("maximo_ms") or 0),
         }
 
-
     @router.get("/documents")
     def list_documents(
         _admin_id: str = Depends(current_admin),
     ) -> list[dict[str, object]]:
-        rows = procedures.call("sp_admin_documentos_listar")
-        result: list[dict[str, object]] = []
         base_dir = Path(container.settings.knowledge_dir)
-        for row in rows:
-            source = str(row.get("ruta_origen") or "")
-            meta_path = base_dir / Path(source).name
-            meta_path = meta_path.with_suffix(".meta.json")
-            metadata: dict[str, object] = {}
-            if meta_path.is_file():
-                try:
-                    value = json.loads(meta_path.read_text(encoding="utf-8"))
-                    metadata = value if isinstance(value, dict) else {}
-                except (OSError, ValueError):
-                    metadata = {}
-            title = str(row.get("titulo") or metadata.get("title") or "").strip()
-            topic = str(row.get("tema") or metadata.get("topic") or "").strip()
-            if title or topic:
-                procedures.call(
-                    "sp_admin_documento_metadata_asegurar",
-                    (int(row["id"]), title, topic),
-                )
-            result.append(
-                {
+
+        with container.session_factory() as session:
+            rows = session.execute(
+                text("""
+                    SELECT
+                        d.id,
+                        d.ruta_origen,
+                        d.hash_contenido,
+                        d.fecha_creacion,
+                        COALESCE(a.titulo, '') AS titulo,
+                        COALESCE(a.tema, '') AS tema,
+                        COALESCE(a.estado, 'ACTIVO') AS estado,
+                        COALESCE(a.version, 1) AS version,
+                        a.fecha_actualizacion
+                    FROM documentos_conocimiento AS d
+                    LEFT JOIN documentos_conocimiento_administracion AS a
+                        ON a.documento_id = d.id
+                    ORDER BY d.fecha_creacion DESC, d.id DESC
+                """)
+            ).mappings().all()
+
+            result = []
+
+            for row in rows:
+                source = str(row["ruta_origen"] or "")
+                meta_path = (
+                    base_dir / Path(source).name
+                ).with_suffix(".meta.json")
+
+                metadata = {}
+                if meta_path.is_file():
+                    try:
+                        value = json.loads(meta_path.read_text(encoding="utf-8"))
+                        metadata = value if isinstance(value, dict) else {}
+                    except (OSError, ValueError):
+                        metadata = {}
+
+                title = str(row["titulo"] or metadata.get("title") or "").strip()
+                topic = str(row["tema"] or metadata.get("topic") or "").strip()
+
+                if title or topic:
+                    guardar_metadata(
+                        session,
+                        int(row["id"]),
+                        title,
+                        topic,
+                    )
+
+                result.append({
                     "id": str(row["id"]),
                     "title": title or "Documento sin título",
                     "topic": topic or "Sin tema",
                     "source_path": source,
                     "content_hash": str(row["hash_contenido"]),
-                    "status": str(row.get("estado") or "ACTIVO"),
-                    "version": int(row.get("version") or 1),
-                    "created_at": str(row.get("fecha_creacion") or ""),
-                    "updated_at": str(row.get("fecha_actualizacion") or ""),
-                }
-            )
+                    "status": str(row["estado"]),
+                    "version": int(row["version"]),
+                    "created_at": str(row["fecha_creacion"] or ""),
+                    "updated_at": str(row["fecha_actualizacion"] or ""),
+                })
+
+            session.commit()
+
         return result
 
     @router.get("/documents/{document_id}")
@@ -129,29 +249,38 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
         document_id: int,
         _admin_id: str = Depends(current_admin),
     ) -> dict[str, object]:
-        rows = procedures.call("sp_admin_documentos_listar")
-        row = next((item for item in rows if int(item["id"]) == document_id), None)
+        with container.session_factory() as session:
+            row = obtener_documento(session, document_id)
+
         if row is None:
             raise HTTPException(status_code=404, detail="Documento no encontrado")
-        source = str(row.get("ruta_origen") or "")
+
+        source = str(row["ruta_origen"] or "")
         target = Path(container.settings.knowledge_dir) / Path(source).name
+
         if not target.is_file():
-            raise HTTPException(status_code=409, detail="No se encontró el archivo del documento.")
+            raise HTTPException(
+                status_code=409,
+                detail="No se encontró el archivo del documento.",
+            )
+
         metadata_path = target.with_suffix(".meta.json")
-        metadata: dict[str, object] = {}
+        metadata = {}
+
         if metadata_path.is_file():
             try:
                 value = json.loads(metadata_path.read_text(encoding="utf-8"))
                 metadata = value if isinstance(value, dict) else {}
             except (OSError, ValueError):
                 metadata = {}
+
         return {
             "id": str(row["id"]),
-            "title": str(row.get("titulo") or metadata.get("title") or ""),
-            "topic": str(row.get("tema") or metadata.get("topic") or ""),
+            "title": str(row["titulo"] or metadata.get("title") or ""),
+            "topic": str(row["tema"] or metadata.get("topic") or ""),
             "content": target.read_text(encoding="utf-8"),
-            "status": str(row.get("estado") or "ACTIVO"),
-            "version": int(row.get("version") or 1),
+            "status": str(row["estado"]),
+            "version": int(row["version"]),
         }
 
     @router.post("/documents", status_code=status.HTTP_201_CREATED)
@@ -167,11 +296,18 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
                     contenido=payload.content,
                 )
             )
-            procedures.call(
-                "sp_admin_documento_metadata_asegurar",
-                (int(result.id), result.titulo, result.tema),
-            )
+
+            with container.session_factory() as session:
+                guardar_metadata(
+                    session,
+                    int(result.id),
+                    result.titulo,
+                    result.tema,
+                )
+                session.commit()
+
             indexed = container.puerto_indexar_conocimiento.ejecutar()
+
         except ErrorDocumentoConocimientoDuplicado as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
         except ErrorDocumentoConocimientoInvalido as error:
@@ -181,6 +317,7 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
                 status_code=503,
                 detail="El documento se guardó, pero no se pudo completar su indexación.",
             ) from error
+
         return {
             "id": result.id,
             "title": result.titulo,
@@ -196,45 +333,128 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
         payload: AdminDocumentRequest,
         _admin_id: str = Depends(current_admin),
     ) -> dict[str, object]:
-        rows = procedures.call("sp_admin_documentos_listar")
-        row = next((item for item in rows if int(item["id"]) == document_id), None)
-        if row is None:
-            raise HTTPException(status_code=404, detail="Documento no encontrado")
         content_value = payload.content.strip()
+
         if not content_value:
-            raise HTTPException(status_code=400, detail="El contenido es obligatorio.")
-        source = str(row["ruta_origen"])
-        target = Path(container.settings.knowledge_dir) / Path(source).name
-        if not target.is_file():
-            raise HTTPException(status_code=409, detail="No se encontró el archivo del documento.")
-        content_hash = HashContenido.desde_contenido(content_value)
-        try:
-            updated = procedures.call(
-                "sp_admin_documento_contenido_actualizar",
-                (document_id, content_hash.value, payload.title.strip(), payload.topic.strip()),
+            raise HTTPException(
+                status_code=400,
+                detail="El contenido es obligatorio.",
             )
-        except pymysql.err.OperationalError as error:
-            if error.args and error.args[0] == 1644:
-                raise HTTPException(status_code=409, detail=str(error.args[-1])) from error
-            raise
+
+        with container.session_factory() as session:
+            row = obtener_documento(session, document_id)
+
+            if row is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Documento no encontrado",
+                )
+
+            if str(row["estado"]) == "INACTIVO":
+                raise HTTPException(
+                    status_code=409,
+                    detail="No se puede actualizar un documento inactivo.",
+                )
+
+            source = str(row["ruta_origen"])
+            target = Path(container.settings.knowledge_dir) / Path(source).name
+
+            if not target.is_file():
+                raise HTTPException(
+                    status_code=409,
+                    detail="No se encontró el archivo del documento.",
+                )
+
+            content_hash = HashContenido.desde_contenido(content_value)
+
+            duplicado = session.execute(
+                text("""
+                    SELECT id
+                    FROM documentos_conocimiento
+                    WHERE hash_contenido = :hash
+                      AND id <> :document_id
+                    LIMIT 1
+                """),
+                {
+                    "hash": content_hash.value,
+                    "document_id": document_id,
+                },
+            ).first()
+
+            if duplicado:
+                raise HTTPException(
+                    status_code=409,
+                    detail="El contenido ya está registrado en otro documento.",
+                )
+
+            session.execute(
+                text("""
+                    UPDATE documentos_conocimiento
+                    SET hash_contenido = :hash
+                    WHERE id = :document_id
+                """),
+                {
+                    "hash": content_hash.value,
+                    "document_id": document_id,
+                },
+            )
+
+            session.execute(
+                text("""
+                    INSERT INTO documentos_conocimiento_administracion (
+                        documento_id,
+                        titulo,
+                        tema,
+                        estado,
+                        version
+                    )
+                    VALUES (
+                        :documento_id,
+                        :titulo,
+                        :tema,
+                        'ACTIVO',
+                        2
+                    )
+                    ON DUPLICATE KEY UPDATE
+                        titulo = VALUES(titulo),
+                        tema = VALUES(tema),
+                        version = version + 1
+                """),
+                {
+                    "documento_id": document_id,
+                    "titulo": payload.title.strip(),
+                    "tema": payload.topic.strip(),
+                },
+            )
+
+            session.commit()
+
         target.write_text(content_value, encoding="utf-8")
         metadata_path = target.with_suffix(".meta.json")
         metadata_path.write_text(
             json.dumps(
-                {"title": payload.title.strip(), "topic": payload.topic.strip(), "chunk_count": 0},
+                {
+                    "title": payload.title.strip(),
+                    "topic": payload.topic.strip(),
+                    "chunk_count": 0,
+                },
                 ensure_ascii=False,
             ),
             encoding="utf-8",
         )
+
         container.puerto_almacen_vectores.delete_by_document(str(document_id))
         indexed = container.puerto_indexar_conocimiento.ejecutar()
-        data = updated[0] if updated else {}
+
+        with container.session_factory() as session:
+            updated = obtener_documento(session, document_id)
+
         return {
             "id": str(document_id),
             "title": payload.title.strip(),
             "topic": payload.topic.strip(),
-            "status": str(data.get("estado") or row.get("estado") or "ACTIVO"),
-            "version": int(data.get("version") or int(row.get("version") or 1) + 1),
+            "status": str(updated["estado"]),
+            "version": int(updated["version"]),
             "indexed_chunks": indexed.total_fragmentos,
         }
 
@@ -244,27 +464,78 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
         payload: AdminDocumentStateRequest,
         _admin_id: str = Depends(current_admin),
     ) -> dict[str, object]:
-        try:
-            rows = procedures.call(
-                "sp_admin_documento_estado_actualizar",
-                (document_id, payload.status),
+        with container.session_factory() as session:
+            row = obtener_documento(session, document_id)
+
+            if row is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Documento no encontrado",
+                )
+
+            session.execute(
+                text("""
+                    INSERT INTO documentos_conocimiento_administracion (
+                        documento_id,
+                        titulo,
+                        tema,
+                        estado,
+                        version
+                    )
+                    VALUES (
+                        :documento_id,
+                        :titulo,
+                        :tema,
+                        :estado,
+                        1
+                    )
+                    ON DUPLICATE KEY UPDATE
+                        estado = VALUES(estado)
+                """),
+                {
+                    "documento_id": document_id,
+                    "titulo": str(row["titulo"] or ""),
+                    "tema": str(row["tema"] or ""),
+                    "estado": payload.status,
+                },
             )
-        except pymysql.err.MySQLError as error:
-            if error.args and error.args[0] == 1644:
-                raise HTTPException(status_code=404, detail="Documento no encontrado") from error
-            raise
+
+            session.commit()
+
         if payload.status == "INACTIVO":
             container.puerto_almacen_vectores.delete_by_document(str(document_id))
         else:
             container.puerto_indexar_conocimiento.ejecutar()
-        return rows[0] if rows else {"documento_id": document_id, "estado": payload.status}
 
+        return {
+            "documento_id": document_id,
+            "estado": payload.status,
+        }
 
     @router.get("/evaluations")
     def list_evaluations(
         _admin_id: str = Depends(current_admin),
     ) -> list[dict[str, object]]:
-        rows = procedures.call("sp_evaluaciones_ia_listar")
+        with container.session_factory() as session:
+            rows = session.execute(
+                text("""
+                    SELECT
+                        id,
+                        dataset_version,
+                        proveedor,
+                        modelo,
+                        precision_promedio,
+                        pertinencia_promedio,
+                        fidelidad_promedio,
+                        recall_contexto_promedio,
+                        duracion_promedio_ms,
+                        total_muestras,
+                        fecha_creacion
+                    FROM evaluaciones_ia
+                    ORDER BY fecha_creacion DESC, id DESC
+                """)
+            ).mappings().all()
+
         return [
             {
                 "id": str(row["id"]),
@@ -273,8 +544,14 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
                 "model": str(row["modelo"]),
                 "retrieval_precision": float(row["precision_promedio"] or 0),
                 "answer_pertinence": float(row["pertinencia_promedio"] or 0),
-                "faithfulness": float(row["fidelidad_promedio"]) if row["fidelidad_promedio"] is not None else None,
-                "context_recall": float(row["recall_contexto_promedio"]) if row["recall_contexto_promedio"] is not None else None,
+                "faithfulness": (
+                    float(row["fidelidad_promedio"])
+                    if row["fidelidad_promedio"] is not None else None
+                ),
+                "context_recall": (
+                    float(row["recall_contexto_promedio"])
+                    if row["recall_contexto_promedio"] is not None else None
+                ),
                 "average_response_ms": float(row["duracion_promedio_ms"] or 0),
                 "sample_count": int(row["total_muestras"] or 0),
                 "created_at": str(row["fecha_creacion"] or ""),
@@ -287,6 +564,43 @@ def create_admin_router(container: CompositionRoot) -> APIRouter:
         evaluation_id: int,
         _admin_id: str = Depends(current_admin),
     ) -> list[dict[str, object]]:
-        return procedures.call("sp_evaluacion_ia_detalles_listar", (evaluation_id,))
+        with container.session_factory() as session:
+            rows = session.execute(
+                text("""
+                    SELECT
+                        id,
+                        evaluacion_id,
+                        item_id,
+                        pregunta,
+                        precision_score,
+                        pertinencia,
+                        duracion_ms,
+                        respuesta
+                    FROM evaluaciones_ia_detalle
+                    WHERE evaluacion_id = :evaluation_id
+                    ORDER BY id ASC
+                """),
+                {"evaluation_id": evaluation_id},
+            ).mappings().all()
+
+        return [
+            {
+                "id": str(row["id"]),
+                "evaluation_id": str(row["evaluacion_id"]),
+                "item_id": str(row["item_id"]),
+                "question": str(row["pregunta"]),
+                "precision": (
+                    float(row["precision_score"])
+                    if row["precision_score"] is not None else None
+                ),
+                "pertinence": (
+                    float(row["pertinencia"])
+                    if row["pertinencia"] is not None else None
+                ),
+                "duration_ms": float(row["duracion_ms"] or 0),
+                "answer": str(row["respuesta"]),
+            }
+            for row in rows
+        ]
 
     return router
