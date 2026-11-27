@@ -5,7 +5,6 @@ from uuid import uuid4
 from fastapi import FastAPI
 
 from app.infrastructure.config.cors import registrar_cors
-from app.infrastructure.adapters.output.mysql.procedures import MysqlStoredProcedureGateway
 
 from app.infrastructure.adapters.input.http.auth_controller import create_auth_router
 from app.infrastructure.adapters.input.http.admin_controller import create_admin_router
