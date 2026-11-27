@@ -3,7 +3,9 @@ import time
 from uuid import uuid4
 
 from fastapi import FastAPI
+
 from sqlalchemy import text
+
 from app.infrastructure.config.cors import registrar_cors
 
 from app.infrastructure.adapters.input.http.auth_controller import create_auth_router
@@ -74,10 +76,10 @@ async def registrar_metrica_consulta(request, call_next):
         duracion_ms = max(0, int((time.perf_counter() - inicio) * 1000))
         try:
             guardar_metrica_consulta(
-    request_id,
-    codigo,
-    duracion_ms,
-)
+                request_id,
+                codigo,
+                duracion_ms,
+            )
         except Exception:
             # La métrica no debe interrumpir una consulta agrícola.
             pass
