@@ -3,7 +3,7 @@ import time
 from uuid import uuid4
 
 from fastapi import FastAPI
-
+from sqlalchemy import text
 from app.infrastructure.config.cors import registrar_cors
 
 from app.infrastructure.adapters.input.http.auth_controller import create_auth_router
@@ -28,7 +28,35 @@ app = FastAPI(
 )
 
 
-metric_gateway = MysqlStoredProcedureGateway(container.session_factory)
+def guardar_metrica_consulta(
+    identificador: str,
+    codigo_respuesta: int,
+    duracion_ms: int,
+) -> None:
+    with container.session_factory() as session:
+        session.execute(
+            text("""
+                INSERT INTO metricas_consulta (
+                    identificador_solicitud,
+                    codigo_respuesta,
+                    duracion_ms
+                )
+                VALUES (
+                    :identificador,
+                    :codigo_respuesta,
+                    :duracion_ms
+                )
+                ON DUPLICATE KEY UPDATE
+                    codigo_respuesta = VALUES(codigo_respuesta),
+                    duracion_ms = VALUES(duracion_ms)
+            """),
+            {
+                "identificador": identificador,
+                "codigo_respuesta": codigo_respuesta,
+                "duracion_ms": duracion_ms,
+            },
+        )
+        session.commit()
 
 
 @app.middleware("http")
@@ -45,10 +73,11 @@ async def registrar_metrica_consulta(request, call_next):
     finally:
         duracion_ms = max(0, int((time.perf_counter() - inicio) * 1000))
         try:
-            metric_gateway.call(
-                "sp_metrica_consulta_guardar",
-                (request_id, codigo, duracion_ms),
-            )
+            guardar_metrica_consulta(
+    request_id,
+    codigo,
+    duracion_ms,
+)
         except Exception:
             # La métrica no debe interrumpir una consulta agrícola.
             pass
