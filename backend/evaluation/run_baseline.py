@@ -172,38 +172,100 @@ def _guardar_en_mysql(
     recall_contexto: float | None,
     duracion_promedio_ms: float,
 ) -> str:
-    gateway = MysqlStoredProcedureGateway(create_session_factory(settings))
-    headers = gateway.call(
-        "sp_evaluacion_ia_guardar",
-        (
-            dataset_version[:100],
-            settings.generation_provider[:40],
-            settings.ollama_model[:120],
-            precision_promedio,
-            pertinencia_promedio,
-            fidelidad,
-            recall_contexto,
-            duracion_promedio_ms,
-            len(muestras),
-        ),
-    )
-    if not headers:
-        raise RuntimeError("El procedimiento no devolvió el identificador de evaluación")
-    evaluation_id = str(headers[0]["id"])
-    for item in muestras:
-        gateway.call(
-            "sp_evaluacion_ia_detalle_guardar",
-            (
-                int(evaluation_id),
-                item.id[:100],
-                item.question,
-                precision_recuperacion_lexica(item),
-                pertinencia_lexica(item),
-                item.duration_ms,
-                item.answer,
-            ),
-        )
-    return evaluation_id
+    session_factory = create_session_factory(settings)
+
+    with session_factory() as session:
+        try:
+            resultado = session.execute(
+                text("""
+                    INSERT INTO evaluaciones_ia (
+                        dataset_version,
+                        proveedor,
+                        modelo,
+                        precision_promedio,
+                        pertinencia_promedio,
+                        fidelidad_promedio,
+                        recall_contexto_promedio,
+                        duracion_promedio_ms,
+                        total_muestras
+                    )
+                    VALUES (
+                        :dataset_version,
+                        :proveedor,
+                        :modelo,
+                        :precision_promedio,
+                        :pertinencia_promedio,
+                        :fidelidad_promedio,
+                        :recall_contexto_promedio,
+                        :duracion_promedio_ms,
+                        :total_muestras
+                    )
+                """),
+                {
+                    "dataset_version": dataset_version[:100],
+                    "proveedor": settings.generation_provider[:40],
+                    "modelo": settings.ollama_model[:120],
+                    "precision_promedio": precision_promedio,
+                    "pertinencia_promedio": pertinencia_promedio,
+                    "fidelidad_promedio": fidelidad,
+                    "recall_contexto_promedio": recall_contexto,
+                    "duracion_promedio_ms": duracion_promedio_ms,
+                    "total_muestras": len(muestras),
+                },
+            )
+
+            evaluation_id = resultado.lastrowid
+
+            if not evaluation_id:
+                raise RuntimeError(
+                    "No se pudo obtener el identificador de la evaluación."
+                )
+
+            detalles = [
+                {
+                    "evaluacion_id": int(evaluation_id),
+                    "item_id": item.id[:100],
+                    "pregunta": item.question,
+                    "precision_score": precision_recuperacion_lexica(item),
+                    "pertinencia": pertinencia_lexica(item),
+                    "duracion_ms": item.duration_ms,
+                    "respuesta": item.answer,
+                }
+                for item in muestras
+            ]
+
+            if detalles:
+                session.execute(
+                    text("""
+                        INSERT INTO evaluaciones_ia_detalle (
+                            evaluacion_id,
+                            item_id,
+                            pregunta,
+                            precision_score,
+                            pertinencia,
+                            duracion_ms,
+                            respuesta
+                        )
+                        VALUES (
+                            :evaluacion_id,
+                            :item_id,
+                            :pregunta,
+                            :precision_score,
+                            :pertinencia,
+                            :duracion_ms,
+                            :respuesta
+                        )
+                    """),
+                    detalles,
+                )
+
+            session.commit()
+
+            return str(evaluation_id)
+
+        except Exception:
+            session.rollback()
+            raise
 
 
 def _promedio(values: list[float]) -> float:
